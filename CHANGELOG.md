@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/WYRE-AI/node-kpn/compare/v1.0.0...v1.0.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* treat the MSM token endpoint's HTTP 500 invalid_client as an authentication error ([4f299c1](https://github.com/WYRE-AI/node-kpn/commit/4f299c14e532c8d40c227ea06290ddb405d195ed))
+
 # 1.0.0 (2026-09-25)
 
 
