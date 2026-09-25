@@ -13,20 +13,20 @@ Disturbance Check, Internet Speed Check, SIM Swap and Mobile Services Management
 ## Install
 
 ```bash
-npm install @wyre-technology/node-kpn
+npm install @wyre-ai/node-kpn
 ```
 
-The package is published to GitHub Packages under the `@wyre-technology` scope. Configure your `.npmrc`:
+The package is published to GitHub Packages under the `@wyre-ai` scope. Configure your `.npmrc`:
 
 ```
-@wyre-technology:registry=https://npm.pkg.github.com
+@wyre-ai:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
 ## Usage
 
 ```ts
-import { KpnClient, buildFilters, referenceNumber } from '@wyre-technology/node-kpn';
+import { KpnClient, buildFilters, referenceNumber } from '@wyre-ai/node-kpn';
 
 const kpn = new KpnClient({
   clientId: process.env.KPN_CLIENT_ID!,         // developer.kpn.com → Dashboard → Projects

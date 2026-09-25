@@ -1,5 +1,5 @@
 {
-  "name": "@wyre-technology/node-kpn",
+  "name": "@wyre-ai/node-kpn",
   "version": "0.0.0-development",
   "description": "Node.js client library for the KPN API Store (Disturbance Check, Internet Speed Check, SIM Swap, Mobile Services Management)",
   "type": "module",
@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wyre-technology/node-kpn.git"
+    "url": "git+https://github.com/WYRE-AI/node-kpn.git"
   },
   "keywords": [
     "kpn",
