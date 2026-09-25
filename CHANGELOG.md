@@ -1,3 +1,11 @@
+# 1.0.0 (2026-09-25)
+
+
+### Features
+
+* add KPN network and MSM mobile resources ([a92df19](https://github.com/WYRE-AI/node-kpn/commit/a92df197d5eb1f70d43832c3a9a49e07b6c64827))
+* initial KPN SDK core (dual-realm OAuth, HTTP client, errors, MSM helpers) ([9283fcf](https://github.com/WYRE-AI/node-kpn/commit/9283fcfe7bb3197b7c74e95c250592f36e65d983))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
