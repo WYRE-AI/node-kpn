@@ -57,6 +57,22 @@ describe('parseKpnError envelopes', () => {
     expect(err.message).toBe('ClientId is Invalid');
   });
 
+  it('MSM token endpoint reports a bad client as HTTP 500 → AuthenticationError(invalid_client)', () => {
+    // Body captured from the live /oauth/grip/msm/accesstoken endpoint (2026-09-25).
+    const err = parseKpnError(500, {
+      error: {
+        transactionId: '8c5c7db1-20f3-4f4c-9f1a-d203dab58bb9',
+        status: '500 - Internal Server Error',
+        name: 'Internal Server Error',
+        message: 'invalid_client-invalid_client_id',
+        info: 'https://developer.kpn.com/support',
+      },
+    });
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.code).toBe('invalid_client');
+    expect(err.statusCode).toBe(500);
+  });
+
   it('falls back to raw text', () => {
     const err = parseKpnError(502, '<html>bad gateway</html>');
     expect(err).toBeInstanceOf(ServerError);

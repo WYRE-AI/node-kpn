@@ -100,10 +100,15 @@ function parseEnvelope(body: unknown): Parsed {
 
 /** Map a non-2xx KPN response to the matching {@link KpnError} subclass. */
 export function parseKpnError(status: number, body: unknown, headers?: Headers): KpnError {
-  const { message, code, transactionId } = parseEnvelope(body);
+  const parsed = parseEnvelope(body);
+  const { message, transactionId } = parsed;
+  // The MSM token endpoint answers a bad client id/secret with HTTP 500 and
+  // message "invalid_client-invalid_client_id" (observed live 2026-09-25).
+  const badClient = message?.startsWith('invalid_client') ?? false;
+  const code = badClient ? 'invalid_client' : parsed.code;
   const args = [body, code, transactionId] as const;
 
-  if (status === 401 || (code !== undefined && INVALID_TOKEN_CODES.has(code))) {
+  if (status === 401 || badClient || (code !== undefined && INVALID_TOKEN_CODES.has(code))) {
     return new AuthenticationError(message ?? 'Authentication failed', status, ...args);
   }
   switch (status) {
