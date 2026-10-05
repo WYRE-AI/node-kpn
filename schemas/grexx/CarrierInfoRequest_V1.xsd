@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="CarrierInfoRequest_V1" nillable="false" type="CarrierInfoRequest_V1" />
+  <xs:complexType name="CarrierInfoRequest_V1">
+    <xs:annotation>
+      <xs:documentation>Met een CarrierInfoRequest kan Infra informatie worden opgevraagd voor een bepaalde locatie. Een CarrierInfoRequest krijgt als reactie een CarrierInfoResponse.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="ProductType" type="ProductType_V1">
+        <xs:annotation>
+          <xs:documentation>Type product waarvoor de check gedaan wordt. Mogelijke waarden: xDSL, FttH, WeasFiber, All. Voorbeeld: xDSL.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="ZipCode" type="ZipCode">
+        <xs:annotation>
+          <xs:documentation>De postcode waarvoor de check gedaan wordt. Voorbeeld: 1122AB</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HouseNumber" type="HouseNumber">
+        <xs:annotation>
+          <xs:documentation>Het huisnummer waarvoor de check gedaan wordt. Voorbeeld: 10</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNumberExt" type="HouseNumberExt">
+        <xs:annotation>
+          <xs:documentation>De toevoeging bij het huisnummer. Voorbeeld: a</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PhoneNumber" type="PhoneNumber">
+        <xs:annotation>
+          <xs:documentation>Het telefoonnummer waarvoor de check gedaan wordt. Alleen van toepassing voor xDSL. Voorbeeld: 0884372636</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="IsraSpecification" type="IsraSpecification">
+        <xs:annotation>
+          <xs:documentation>Het ISRA-punt waarvoor de check gedaan wordt. Alleen van toepassing voor xDSL. Voorbeeld: 001</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het service ID zoals bekend bij KPN, indien aanwezig. Alleen van toepassing voor xDSL.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="ProductType_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="xDSL" />
+      <xs:enumeration value="FttH" />
+      <xs:enumeration value="WeasFiber" />
+      <xs:enumeration value="All" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ZipCode">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\\d{4}\\s*[a-zA-Z]{2}\\s*" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="HouseNumber">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1" />
+      <xs:maxInclusive value="99999" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="HouseNumberExt">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=".{0,4}\\s*" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PhoneNumber">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="0\\d{9}\\s*" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IsraSpecification">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\\d{3}\\s*" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

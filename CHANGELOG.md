@@ -33,5 +33,5 @@ Releases are cut automatically by semantic-release from conventional commits.
 
 - OAuth client-credentials token mint and cache (`getAccessToken`), sent as `Authorization: Bearer` by default.
 - `authMode: 'basic' | 'oauth'` for the acceptatie realtime/queued Basic listing.
-- Phase 1 realtime builders and parsers, including `ZipCodeCheckRequest_V6`, plus `postRealtimeXml`.
+- Phase 1 realtime builders and parsers taken from the portal XSDs in `schemas/grexx/`. `ZipCodeCheckRequest_V6` pairs with `ZipCodeCheckResponse_V5`. `OrderSummary` and `GetMobileSubscriptionOrders` responses are generic XML because the portal has no response XSD. There is no `GetSimCard` request. Plus `postRealtimeXml`.
 - `testConnection()` and `GrexxError.grexxCode` (codes 0, 68, 100–109, and IRMA order statuses 201/203/204/…).

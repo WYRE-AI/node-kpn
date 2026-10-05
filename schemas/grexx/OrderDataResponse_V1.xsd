@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="OrderDataResponse_V1" nillable="false" type="OrderDataResponse_V1" />
+  <xs:complexType name="OrderDataResponse_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Status" type="Status_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="Order" type="OrderData_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>Bevat eventuele opmerkingen bij de statuscode.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success" />
+      <xs:enumeration value="UnknownError" />
+      <xs:enumeration value="ValidationError" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="OrderData_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="CustomerId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>De identificatie van de klant waarvoor deze order geplaatst is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="ProductCode">
+        <xs:annotation>
+          <xs:documentation>Code van het product dat is besteld met deze order. Zie Irma prijslijst of Nina ProductPriceDetailsRequest voor de mogelijke producten.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+            <xs:maxLength value="13" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="Quantity" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het bestelde aantal.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

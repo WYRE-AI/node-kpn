@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="GetMobileSettingsResponse_V1" nillable="false" type="GetMobileSettingsResponse_V1" />
+  <xs:complexType name="GetMobileSettingsResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Een GetMobileSettingsResponse bevat de blokkeringen en limieten van een mobielnummer.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Settings" type="MobileSettingsWithStatus_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="MobileSettingsWithStatus_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockSim" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of de sim geblokkeerd is. Alle andere instellingen kunnen dan niet aangepast worden.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockOutgoingCalls" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of uitgaande gesprekken geblokkeerd worden.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockCallsToInternationalNumbers" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of uitgaande gesprekken naar niet-NL nummers worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockOutgoingCallsExceptDomestic" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of uitgaande gesprekken behalve bellen binnen NL naar NL nummers worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of roaming wordt geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockIncomingCallsWhenRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of binnenkomende gesprekken in het buitenland worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockDataRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of data roaming wordt geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockInformationNumbers" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of betaalde informatie- en servicenummers (0900) worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockServiceNumbers" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of entertainment nummers (0909 en 0906) worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockCallerId" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of nummerherkenning wordt geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockCallWaiting" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of wisselgesprekken worden geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockPremiumSms" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of premium SMS wordt geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockCsDataFax" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of Circuit Switched Data (2G) wordt geblokkeerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockVoLte" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of 4G bellen wordt geblokkeerd. Deze instelling wordt niet meer ondersteund.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DataRoamingLimitEnabled" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of het 50 euro data roaming limiet ingeschakeld is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="InternationalCallForwardingEnabled" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of automatisch doorschakelen ingeschakeld is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentMonthDataRoamingLimitLifted" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of het data roaming limiet van de huidige maand opgeheven is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockOutgoingSms" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren uitgaande sms</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockIncomingSms" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren binnenkomende sms</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockIncomingCall" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren inkomende gesprekken</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockOutgoingCallWhenRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren uitgaande gesprekken tijdens roaming</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockIncomingSmsWhenRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren inkomende sms tijdens roaming</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockOutgoingSmsWhenRoaming" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren uitgaande sms tijdens roaming</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockConferenceCall" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren groepsgesprek</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BlockVoicemail" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Blokkeren voicemail</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="SatelliteNetworksEnabled" type="SettingStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Of verbinding op satelliet netwerken ingeschakeld is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SettingStatus_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Value" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>De waarde van de instelling.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="IsPending" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Of de waarde nog niet doorgevoerd is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Remark" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Optionele opmerking over deze instelling.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

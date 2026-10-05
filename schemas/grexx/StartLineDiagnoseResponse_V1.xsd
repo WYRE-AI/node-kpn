@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="StartLineDiagnoseResponse_V1" nillable="true" type="StartLineDiagnoseResponse_V1" />
+  <xs:complexType name="StartLineDiagnoseResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Geeft terug dat de LineDiagnose successvol is gestart. Haal resultaten op met GetLatest.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Status" type="Status_V1" />
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="StartLineDiagnoseResult" type="StartLineDiagnoseResult_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString" />
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success" />
+      <xs:enumeration value="UnknownError" />
+      <xs:enumeration value="ValidationError" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="StartLineDiagnoseResult_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="AnalysisId" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

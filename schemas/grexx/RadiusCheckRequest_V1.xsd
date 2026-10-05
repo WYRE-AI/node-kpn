@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="RadiusCheckRequest_V1" nillable="true" type="RadiusCheckRequest_V1" />
+  <xs:complexType name="RadiusCheckRequest_V1">
+    <xs:annotation>
+      <xs:documentation>          Met deze check  kan gekeken worden of de  modem/CPE zich de laatste 7 dagen heeft ingelogd of tekenen van instabiliteit vertoont.          Als deze niets weergeeft is de lijn langer dan 7 dagen up of helemaal niet up. Ziet u veel inlogpogingen de laatste 7 dagen kan dit wijzen op een klapperende lijn.          Een RadiusCheckRequest krijgt als reactie een RadiusCheckResponse.        </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>De order waarvoor de check gedaan wordt. Voorbeeld: 123456</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

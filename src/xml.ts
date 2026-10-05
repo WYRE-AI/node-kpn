@@ -3,7 +3,7 @@ export const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>';
 
 export type XmlPrimitive = string | number | boolean;
 
-export type XmlValue = XmlPrimitive | XmlObject | XmlValue[];
+export type XmlValue = XmlPrimitive | XmlObject | XmlValue[] | null;
 
 export interface XmlObject {
   [key: string]: XmlValue | undefined;
@@ -37,6 +37,7 @@ export function serializeFields(fields: XmlObject): string {
 
 function serializeValue(name: string, value: XmlValue): string {
   assertXmlName(name);
+  if (value === null) return '';
   if (Array.isArray(value)) {
     return value.map((item) => serializeValue(name, item)).join('');
   }
@@ -258,7 +259,16 @@ export function parseXmlDocument(xml: string): ParsedElement {
   return root;
 }
 
+function isNil(attributes: Record<string, string>): boolean {
+  for (const [key, value] of Object.entries(attributes)) {
+    const local = key.slice(key.lastIndexOf(':') + 1).toLowerCase();
+    if (local === 'nil' && (value === 'true' || value === '1')) return true;
+  }
+  return false;
+}
+
 export function elementToValue(node: ParsedElement): XmlValue {
+  if (isNil(node.attributes)) return null;
   const text = node.text.trim();
   const hasAttr = Object.keys(node.attributes).length > 0;
   if (!node.children.length && !hasAttr) return text;

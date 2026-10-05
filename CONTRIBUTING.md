@@ -31,7 +31,7 @@ messages must follow [Conventional Commits](https://www.conventionalcommits.org/
 
 - **Zero runtime dependencies.** The SDK uses native `fetch` only; do not add runtime deps.
 - New realtime calls need a request builder, a parse helper, and unit tests for the XML. Mock the token endpoint; never point CI at acceptatie.
-- Field names that are not in an XSD stay optional or behind `extra` / `postRealtimeXml`. Do not invent a production base URL.
+- Phase 1 request and response shapes come from `schemas/grexx/`. A call with no response XSD stays generic XML. `postRealtimeXml` is the escape hatch. Do not invent a production base URL.
 - Update `CHANGELOG.md` under `[Unreleased]` following
   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Never commit credentials or fixtures containing real tenant data.

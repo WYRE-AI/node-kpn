@@ -23,7 +23,6 @@ import {
   buildGetMobileSettingsRequest,
   buildGetMobileSubscriptionOrdersRequest,
   buildGetMobileSubscriptionUsageRequest,
-  buildGetSimCardRequest,
   buildGetSimRequest,
   buildOrderDataRequest,
   buildOrderSummaryRequest,
@@ -38,7 +37,6 @@ import {
   parseGetMobileSettingsResponse,
   parseGetMobileSubscriptionOrdersResponse,
   parseGetMobileSubscriptionUsageResponse,
-  parseGetSimCardResponse,
   parseGetSimResponse,
   parseOrderDataResponse,
   parseOrderSummaryResponse,
@@ -229,7 +227,7 @@ export class KpnGrexxClient {
     return this.dispatch(channel, rootElement, body, options, false);
   }
 
-  zipCodeCheck(request: ZipCodeCheckRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  zipCodeCheck(request: ZipCodeCheckRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.ZipCodeCheckRequest,
       buildZipCodeCheckRequest(request),
@@ -238,7 +236,7 @@ export class KpnGrexxClient {
     );
   }
 
-  prequalification(request: PrequalificationRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  prequalification(request: PrequalificationRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.PrequalificationRequest,
       buildPrequalificationRequest(request),
@@ -247,7 +245,7 @@ export class KpnGrexxClient {
     );
   }
 
-  carrierInfo(request: CarrierInfoRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  carrierInfo(request: CarrierInfoRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.CarrierInfoRequest,
       buildCarrierInfoRequest(request),
@@ -256,7 +254,7 @@ export class KpnGrexxClient {
     );
   }
 
-  radiusCheck(request: RadiusCheckRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  radiusCheck(request: RadiusCheckRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.RadiusCheckRequest,
       buildRadiusCheckRequest(request),
@@ -265,11 +263,11 @@ export class KpnGrexxClient {
     );
   }
 
-  rasCheck(request: RasCheckRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  rasCheck(request: RasCheckRequest, options?: CallOptions) {
     return this.postAndParse(PHASE1_ROOTS.RasCheckRequest, buildRasCheckRequest(request), parseRasCheckResponse, options);
   }
 
-  startLineDiagnose(request: StartLineDiagnoseRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  startLineDiagnose(request: StartLineDiagnoseRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.StartLineDiagnoseRequest,
       buildStartLineDiagnoseRequest(request),
@@ -278,7 +276,7 @@ export class KpnGrexxClient {
     );
   }
 
-  customerData(request: CustomerDataRequest = {}, options?: CallOptions): Promise<GrexxParsedResponse> {
+  customerData(request: CustomerDataRequest = {}, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.CustomerDataRequest,
       buildCustomerDataRequest(request),
@@ -287,7 +285,7 @@ export class KpnGrexxClient {
     );
   }
 
-  orderSummary(request: OrderSummaryRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  orderSummary(request: OrderSummaryRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.OrderSummaryRequest,
       buildOrderSummaryRequest(request),
@@ -296,7 +294,7 @@ export class KpnGrexxClient {
     );
   }
 
-  orderData(request: OrderDataRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  orderData(request: OrderDataRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.OrderDataRequest,
       buildOrderDataRequest(request),
@@ -305,20 +303,11 @@ export class KpnGrexxClient {
     );
   }
 
-  getSim(request: GetSimRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  getSim(request: GetSimRequest, options?: CallOptions) {
     return this.postAndParse(PHASE1_ROOTS.GetSimRequest, buildGetSimRequest(request), parseGetSimResponse, options);
   }
 
-  getSimCard(request: GetSimRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
-    return this.postAndParse(
-      PHASE1_ROOTS.GetSimCardRequest,
-      buildGetSimCardRequest(request),
-      parseGetSimCardResponse,
-      options
-    );
-  }
-
-  getMobileSettings(request: GetMobileSettingsRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  getMobileSettings(request: GetMobileSettingsRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.GetMobileSettingsRequest,
       buildGetMobileSettingsRequest(request),
@@ -330,7 +319,7 @@ export class KpnGrexxClient {
   getMobileSubscriptionUsage(
     request: GetMobileSubscriptionUsageRequest,
     options?: CallOptions
-  ): Promise<GrexxParsedResponse> {
+  ) {
     return this.postAndParse(
       PHASE1_ROOTS.GetMobileSubscriptionUsageRequest,
       buildGetMobileSubscriptionUsageRequest(request),
@@ -342,7 +331,7 @@ export class KpnGrexxClient {
   getMobileSubscriptionOrders(
     request: GetMobileSubscriptionOrdersRequest,
     options?: CallOptions
-  ): Promise<GrexxParsedResponse> {
+  ) {
     return this.postAndParse(
       PHASE1_ROOTS.GetMobileSubscriptionOrdersRequest,
       buildGetMobileSubscriptionOrdersRequest(request),
@@ -351,7 +340,7 @@ export class KpnGrexxClient {
     );
   }
 
-  availablePortings(request: AvailablePortingsRequest, options?: CallOptions): Promise<GrexxParsedResponse> {
+  availablePortings(request: AvailablePortingsRequest, options?: CallOptions) {
     return this.postAndParse(
       PHASE1_ROOTS.AvailablePortingsRequest,
       buildAvailablePortingsRequest(request),
@@ -360,12 +349,12 @@ export class KpnGrexxClient {
     );
   }
 
-  private async postAndParse(
+  private async postAndParse<T>(
     rootElement: string,
     xml: string,
-    parse: (body: string) => GrexxParsedResponse,
+    parse: (body: string) => T,
     options?: CallOptions
-  ): Promise<GrexxParsedResponse> {
+  ): Promise<T> {
     const parsed = await this.postRealtimeXml(rootElement, xml, options);
     return parse(parsed.rawXml);
   }

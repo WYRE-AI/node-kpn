@@ -70,16 +70,17 @@ const kpn = new KpnGrexxClient(grexxConfigFromEnv());
 console.log(await kpn.testConnection());
 
 const speeds = await kpn.zipCodeCheck({
+  Portfolio: 'Business',
   ZipCode: '1234AB',
-  HouseNumber: 10,
-  HouseNumberExtension: 'A',
+  HouseNr: 10,
+  IsRoomNumberKnown: false,
 });
-console.log(speeds.grexxCode, speeds.body);
+console.log(speeds.data?.Status?.Code, speeds.data?.AvailableSuppliers);
 
-// Exact XML when the provisional field list is not enough:
+// Exact XML when a call is not wrapped by a builder:
 await kpn.postRealtimeXml(
   'ZipCodeCheckRequest_V6',
-  '<ZipCode>1234AB</ZipCode><HouseNumber>10</HouseNumber>',
+  '<Portfolio>Business</Portfolio><ZipCode>1234AB</ZipCode><HouseNr>10</HouseNr><IsRoomNumberKnown>false</IsRoomNumberKnown>',
 );
 ```
 
@@ -87,39 +88,42 @@ await kpn.postRealtimeXml(
 
 ## Phase 1 calls
 
-All of these `POST` to `{KPN_GREXX_BASE_URL}/realtime`. Request roots are the inventory names. **ZipCodeCheck is V6**, the only version in the realtime inventory.
+All of these `POST` to `{KPN_GREXX_BASE_URL}/realtime`. Request and response shapes come from the portal XSDs in [`schemas/grexx/`](./schemas/grexx) (also published with the package). Builders emit elements in XSD document order and reject a missing required field or a value outside an enumeration before the request is sent.
 
-| Client method | IRMA root |
-|---|---|
-| `zipCodeCheck` | `ZipCodeCheckRequest_V6` |
-| `prequalification` | `PrequalificationRequest_V2` |
-| `carrierInfo` | `CarrierInfoRequest_V1` |
-| `radiusCheck` | `RadiusCheckRequest_V1` |
-| `rasCheck` | `RasCheckRequest_V1` |
-| `startLineDiagnose` | `StartLineDiagnoseRequest_V1` |
-| `customerData` | `CustomerDataRequest_V1` |
-| `orderSummary` | `OrderSummaryRequest_V1` |
-| `orderData` | `OrderDataRequest_V1` |
-| `getSim` | `GetSimRequest_V1` |
-| `getSimCard` | `GetSimCardRequest_V1` |
-| `getMobileSettings` | `GetMobileSettingsRequest_V1` |
-| `getMobileSubscriptionUsage` | `GetMobileSubscriptionUsageRequest_V1` |
-| `getMobileSubscriptionOrders` | `GetMobileSubscriptionOrdersRequest_V1` |
-| `availablePortings` | `AvailablePortingsRequest_V1` |
+| Client method | Request root | Response |
+|---|---|---|
+| `zipCodeCheck` | `ZipCodeCheckRequest_V6` | `ZipCodeCheckResponse_V5` |
+| `prequalification` | `PrequalificationRequest_V2` | `PrequalificationResponse_V1` |
+| `carrierInfo` | `CarrierInfoRequest_V1` | `CarrierInfoResponse_V1` |
+| `radiusCheck` | `RadiusCheckRequest_V1` | `RadiusCheckResponse_V1` |
+| `rasCheck` | `RasCheckRequest_V1` | `RasCheckResponse_V1` |
+| `startLineDiagnose` | `StartLineDiagnoseRequest_V1` | `StartLineDiagnoseResponse_V1` |
+| `customerData` | `CustomerDataRequest_V1` | `CustomerDataResponse_V1` |
+| `orderSummary` | `OrderSummaryRequest_V1` | generic XML (no response XSD) |
+| `orderData` | `OrderDataRequest_V1` | `OrderDataResponse_V1` |
+| `getSim` | `GetSimRequest_V1` | `GetSimResponse_V1` |
+| `getMobileSettings` | `GetMobileSettingsRequest_V1` | `GetMobileSettingsResponse_V1` |
+| `getMobileSubscriptionUsage` | `GetMobileSubscriptionUsageRequest_V1` | `GetMobileSubscriptionUsageResponse_V1` |
+| `getMobileSubscriptionOrders` | `GetMobileSubscriptionOrdersRequest_V1` | generic XML (no response XSD) |
+| `availablePortings` | `AvailablePortingsRequest_V1` | `AvailablePortingsResponse_V1` |
 
-Matching `build*Request` and `parse*Response` helpers are exported. `PHASE1_ROOTS` holds the exact element names.
+There is no `GetSimCardRequest`. SIM reads use `GetSimRequest_V1` and key on the integer IRMA `OrderId`. Matching `build*Request` and `parse*Response` helpers are exported. `PHASE1_ROOTS` and `PHASE1_RESPONSE_ROOTS` hold the exact element names.
 
-### Provisional fields
+### Field names from the XSDs
 
-The inventory export describes these calls; it does not include XSDs. Builders emit a small PascalCase set taken from those descriptions:
+- Zip-code check: `Portfolio` (`Business` \| `SMB` \| `Teleworker` \| `All`), `ZipCode`, `HouseNr`, optional `HouseNrExtension`, and required `IsRoomNumberKnown`. Suppliers are a `Suppliers/string` list (`KPN`, `KPNWEAS`, `Eurofiber`, …). An empty list is omitted and means every supplier.
+- Prequalification uses the same `HouseNr` spelling. `HasBroadband: true` requires `ServiceId` or `ReferencePhoneNumber`. `ProductTypeCode` is one of `ADSLTele`, `VDSLTele`, `FTTHTele`, `ADSLSMB`, `VDSLSMB`, `FTTHSMB`, `VDSLZakelijk`, `ADSLZakelijk`, `SDSL`, `FIBER`. Optional `OrderId` must match `OID` plus digits.
+- Carrier info uses `HouseNumber` (1–99999) and `HouseNumberExt`, not `HouseNr`. `ProductType` is `xDSL` \| `FttH` \| `WeasFiber` \| `All`. Zip, phone, ISRA, and extension checks follow the XSD patterns. The portal file stores those patterns double-escaped (`\\d`); the client validates the intended `\d` form.
+- Radius, RAS, order data, GetSim, mobile settings, and mobile usage each take an integer `OrderId`. Start-line diagnose also takes `SymptomCode` (`Sym103` \| `Sym104` \| `Sym105` \| `Sym111`).
+- Customer data and order summary are filters; every field is optional. An empty `CustomerDataRequest` asks for every customer. `Take` is at most 100 (customers) or 2500 (order summary).
+- Mobile subscription orders take `OrderIds` (1–50), serialized as `OrderIds/OrderId`.
+- Available portings require `MobileSubscripionCustomerId` (the XSD spelling, missing the "t") and/or `HipGroupOrderId`, both integers.
 
-- Address checks: `ZipCode`, `HouseNumber`, `HouseNumberExtension` (prequalification also `ConnectionPoint`, `AccessType`).
-- Line checks: `Username` and/or `OrderId`. `StartLineDiagnose` requires `OrderId`.
-- Customer / orders: `CustomerId`, and `Skip` on order summary (the description names `skip`, max 2500 per call). An empty `CustomerDataRequest` asks for every customer.
-- Mobile: `Msisdn` and/or `OrderId`.
-- Porting: `MobileSubscriptionCustomerId` or `HipGroupOrderId`. The inventory sentence spells the customer id `MobileSubscripionCustomerId` (missing "t"); set that property if the XSD kept the typo.
+`xsi:nil` values are omitted from the projected response. IRMA `Status/Code` strings (`Success`, `UnknownError`, `ValidationError`; usage uses `UnKnownError`) stay on `data` and are not copied onto `grexxCode`. Gateway codes still throw.
 
-Pass anything else through `extra`. It is serialized as sibling elements. `postRealtimeXml(root, xmlString)` sends a fragment or a full document unchanged when the root already matches.
+`GetSim` returns `Puc1` (PUK) and, for eSIM, `ActivationCode` and `ConfirmationCode`. Radius check returns `Password`. Those values are not redacted and are not logged by this client. Do not log them in the caller.
+
+`postRealtimeXml(root, xmlString)` sends a fragment or a full document unchanged when the root already matches.
 
 `Content-Type` is `application/xml; charset=utf-8`. That value has **not** been confirmed against live acceptatie. If a smoke test shows Grexx wants `text/xml`, that is the only header to change (`GREXX_XML_CONTENT_TYPE`).
 

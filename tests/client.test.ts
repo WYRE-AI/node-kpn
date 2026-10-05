@@ -109,17 +109,22 @@ describe('OAuth and realtime calls', () => {
         expect(request.headers.get('content-type')).toBe(GREXX_XML_CONTENT_TYPE);
         const xml = await request.text();
         expect(xml).toContain('<ZipCodeCheckRequest_V6>');
-        expect(xml).toContain('<ZipCode>1234AB</ZipCode>');
+        expect(xml).toContain('<HouseNr>10</HouseNr>');
         return xmlResponse(
-          '<ZipCodeCheckResponse_V6><ResultCode>0</ResultCode><ResultMessage>Success</ResultMessage></ZipCodeCheckResponse_V6>'
+          '<ZipCodeCheckResponse_V5><Status><Code>Success</Code></Status></ZipCodeCheckResponse_V5>'
         );
       })
     );
 
     const kpn = client();
-    const first = await kpn.zipCodeCheck({ ZipCode: '1234AB', HouseNumber: '10' });
+    const first = await kpn.zipCodeCheck({
+      Portfolio: 'Business',
+      ZipCode: '1234AB',
+      HouseNr: 10,
+      IsRoomNumberKnown: false,
+    });
     const again = await kpn.getAccessToken();
-    expect(first.grexxCode).toBe(0);
+    expect(first.data?.Status?.Code).toBe('Success');
     expect(again).toBe('tok-1');
     expect(tokenCalls).toBe(1);
   });
@@ -132,8 +137,9 @@ describe('OAuth and realtime calls', () => {
         return xmlResponse('<RasCheckResponse_V1><ResultCode>0</ResultCode></RasCheckResponse_V1>');
       })
     );
-    const parsed = await client({ authMode: 'basic' }).rasCheck({ Username: 'line-user' });
-    expect(parsed.grexxCode).toBe(0);
+    const parsed = await client({ authMode: 'basic' }).rasCheck({ OrderId: 123456 });
+    expect(parsed.data?.ErrorMessage).toBeUndefined();
+    expect(parsed.rootElement).toBe('RasCheckResponse_V1');
   });
 
   it('refreshes the bearer token once after HTTP 401 and does not retry code 102', async () => {
@@ -150,8 +156,8 @@ describe('OAuth and realtime calls', () => {
         return xmlResponse('<CarrierInfoResponse_V1><ResultCode>0</ResultCode></CarrierInfoResponse_V1>');
       })
     );
-    const parsed = await client().carrierInfo({ ZipCode: '1234AB', HouseNumber: 1 });
-    expect(parsed.grexxCode).toBe(0);
+    const parsed = await client().carrierInfo({ ProductType: 'xDSL', ZipCode: '1234AB', HouseNumber: 1 });
+    expect(parsed.rootElement).toBe('CarrierInfoResponse_V1');
     expect(tokenCalls).toBe(2);
     expect(realtimeCalls).toBe(2);
 
@@ -168,7 +174,15 @@ describe('OAuth and realtime calls', () => {
       )
     );
     const kpn = client();
-    await expect(kpn.prequalification({ ZipCode: '1234AB', HouseNumber: 2 })).rejects.toMatchObject({
+    await expect(
+      kpn.prequalification({
+        ZipCode: '1234AB',
+        HouseNr: 2,
+        HasBroadband: false,
+        HasPhone: true,
+        ProductTypeCode: 'VDSLZakelijk',
+      })
+    ).rejects.toMatchObject({
       grexxCode: 102,
     });
     expect(rejectedTokenCalls).toBe(1);
@@ -185,23 +199,27 @@ describe('OAuth and realtime calls', () => {
           });
         }
         if (xml.includes('OrderDataRequest')) {
-          return xmlResponse('<OrderDataResponse_V1><ResultCode>0</ResultCode><Status>204</Status></OrderDataResponse_V1>');
+          return xmlResponse(
+            '<OrderDataResponse_V1><Status><Code>Success</Code></Status><Order><CustomerId>7</CustomerId><ProductCode>FIBER</ProductCode><Quantity>1</Quantity></Order></OrderDataResponse_V1>'
+          );
         }
         return xmlResponse('<Error><Code>68</Code></Error>');
       })
     );
     const kpn = client();
-    await expect(kpn.customerData({ CustomerId: '1' })).rejects.toMatchObject({
+    await expect(kpn.customerData({ Id: 1 })).rejects.toMatchObject({
       name: 'GrexxError',
       grexxCode: 68,
     });
-    await expect(kpn.startLineDiagnose({ OrderId: '9' })).rejects.toBeInstanceOf(GrexxRateLimitError);
-    const limited = await kpn.startLineDiagnose({ OrderId: '9' }).catch((error: unknown) => error);
+    await expect(kpn.startLineDiagnose({ OrderId: 9, SymptomCode: 'Sym103' })).rejects.toBeInstanceOf(
+      GrexxRateLimitError
+    );
+    const limited = await kpn.startLineDiagnose({ OrderId: 9, SymptomCode: 'Sym104' }).catch((error: unknown) => error);
     expect(limited).toBeInstanceOf(GrexxRateLimitError);
     expect(limited).toMatchObject({ grexxCode: 108, retryAfterSeconds: 5 });
-    const order = await kpn.orderData({ OrderId: '55' });
-    expect(order.orderStatus?.code).toBe(204);
-    expect(order.orderStatus?.meaning).toBe('Accepted');
+    const order = await kpn.orderData({ OrderId: 55 });
+    expect(order.data?.Order?.ProductCode).toBe('FIBER');
+    expect(order.data?.Status?.Code).toBe('Success');
   });
 
   it('treats an authenticated XML rejection as a successful connection test', async () => {

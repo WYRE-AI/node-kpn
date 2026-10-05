@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="RasCheckResponse_V1" nillable="true" type="RasCheckResponse_V1" />
+  <xs:complexType name="RasCheckResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Een RasCheckResponse geeft het resultaat van de RAS check terug voor een order. Een RasCheckResponse volgt op een RasCheckReqeust.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bevat een eventuele foutmelding.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ResponseItems" type="ArrayOfRasCheckResponseItem_V1">
+        <xs:annotation>
+          <xs:documentation>Resultaten van de check, per channel een resultaat.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfRasCheckResponseItem_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="RasCheckResponseItem_V1" nillable="true" type="RasCheckResponseItem_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RasCheckResponseItem_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="VrfId" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>              Geeft de VRF ID van de IP-VPN aan voor dit channel.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="QosEnabled" nillable="true" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>              Geeft aan of QoS aan staat voor dit channel.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HasSession" nillable="true" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>              Geeft aan of er een PPP sessie actief is.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="PingSuccessPercent" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>              Geeft het percentage succes aan van 5 ping verzoeken.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="IpAddress" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Geeft aan wat het IP-adres van het channel is.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Error" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Bevat een eventuele foutmelding voor dit channel.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PolicyDetails" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Geeft de Policy Details aan voor dit channel.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

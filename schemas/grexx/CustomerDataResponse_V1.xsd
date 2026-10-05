@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="CustomerDataResponse_V1" nillable="true" type="CustomerDataResponse_V1" />
+  <xs:complexType name="CustomerDataResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Een CustomerDataResponse geeft de klantgegevens terug van alle klanten die voldoen aan de opgegeven parameters. Een CustomerDataResponse volgt op een CustomerDataRequest.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="PagedResult" type="PagedResultOfCustomerData_V4">
+        <xs:annotation>
+          <xs:documentation>Bevat de gepagineerde resultaten.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bevat een eventuele foutmelding.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PagedResultOfCustomerData_V4">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Skip" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Aantal records/klanten dat moet worden overgeslagen (om te pagineren).</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="Take" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Aantal records/klanten dat moet worden opgehaald.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="TotalNumberOfRecords" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Totaal aantal records/klanten.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Results" type="ArrayOfCustomerData_V4">
+        <xs:annotation>
+          <xs:documentation>Elke klant komt in een aparte node te staan met daaronder de klantgegevens.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfCustomerData_V4">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="CustomerData_V4" nillable="true" type="CustomerData_V4" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CustomerData_V4">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Id" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het ID van de klant zoals bekend in Irma. Voorbeeld: 28665.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Name" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De naam van de klant.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Street" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De straatnaam van de klant. Voorbeeld: Maxwellstraat.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HouseNr" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het huisnummer van de klant. Voorbeeld: 51.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNrExtension" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De huisnummertoevoeging van de klant. Voorbeeld: a.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ZipCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De postcode van de klant. Voorbeeld: 6716BX.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="City" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De woonplaats van de klant. Voorbeeld: Ede</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CountryCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De landcode van de klant. Mogelijke waardes: Bel, Deu, Fra, Nld.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Phone1" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het eerste telefoonnummer van de klant. Voorbeeld: 0884372636.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Phone2" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het tweede telefoonnummer van de klant (bijv. mobiel). Voorbeeld: 0612345678.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="DateCreated" type="xs:date">
+        <xs:annotation>
+          <xs:documentation>Datum wanneer de klant is aangemaakt. Voorbeeld: 2016-01-30.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="IsActive" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Is de klant actief. Voorbeeld: true</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Fax" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het faxnummer van de klant. Voorbeeld: 0884372636 .</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Email" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het e-mailadres van de klant. Voorbeeld: klant@email.nl.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Website" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De website van de klant. Voorbeeld: www.klantensite.nl.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DebitNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het debiteurennummer van de klant. Voorbeeld: 1352</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="LegalStatus" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>                          De rechtsvorm van de klant, mogelijke waarden: Onbekend, BV, NV, Stichting, Vereniging, Eenmanszaak, VOF, BV i/o, CV, COOP, REDR, KERK, OWM, BRO, ADVOCAAT, NOTARIS, Accountant.                      </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ExternalId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Een vrij in te vullen veld om de klant te refereren aan een eventueel extern systeem. Voorbeeld: DB0001.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ChamberOfCommerceNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het KVK nummer van de klant. Voorbeeld: 32083145.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="IBAN" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>                          Het IBAN rekeningnummer van de klant. Voorbeeld: NL91ABNA0417164300.                      </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="BIC" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De BIC (Bank Identifier Code) van de bank van de klant. Voorbeeld: INGBNL2A.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="VATNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het BTW-nummer klant. Voorbeeld: 1234567B01.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="FirstBillingDate" nillable="true" type="xs:date">
+        <xs:annotation>
+          <xs:documentation>Datum eerste klantfactuur. Voorbeeld: 2002-05-30.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="KrnId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het KrnId. Voorbeeld: 1234567.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

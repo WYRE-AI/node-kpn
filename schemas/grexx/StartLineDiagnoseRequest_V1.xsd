@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="StartLineDiagnoseRequest_V1" nillable="true" type="StartLineDiagnoseRequest_V1" />
+  <xs:complexType name="StartLineDiagnoseRequest_V1">
+    <xs:annotation>
+      <xs:documentation>Een LineDiagnose is een lijn test die KPN kan uitvoeren op xDSL lijnen met Ethernet verbindingsprotocol.  Als een lijn niet in sync is dan geeft deze test informatie over de mogelijke oorzaak van de storing. Met Start begin je een LineDiagnose. Door te pollen naar GetLatest haal je vervolgens de resultaten op.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Header" type="Header" />
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int" />
+      <xs:element minOccurs="1" maxOccurs="1" name="SymptomCode" type="SymptomCode_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Header">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="PartnerReference" type="xs:string" />
+      <xs:element minOccurs="1" maxOccurs="1" name="DateCreated" type="xs:dateTime" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="SymptomCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Sym103" />
+      <xs:enumeration value="Sym104" />
+      <xs:enumeration value="Sym105" />
+      <xs:enumeration value="Sym111" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
