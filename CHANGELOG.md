@@ -23,11 +23,15 @@ Releases are cut automatically by semantic-release from conventional commits.
 
 ## [Unreleased]
 
+### Breaking
+
+- Replace the developer.kpn.com OAuth client and MSM/network resources with `KpnGrexxClient`, a Grexx IRMA XML client for the KPN partner pilot.
+- Remove Apigee token realms, `api-prd.kpn.com` defaults, disturbance / availability / SIM-swap / MSM methods, and the v1 error hierarchy.
+- Require `KPN_GREXX_USERNAME`, `KPN_GREXX_PASSWORD`, and `KPN_GREXX_BASE_URL`. There is no production host default.
+
 ### Added
 
-- `KpnClient` with two OAuth realms (gateway and Mobile Services Management) sharing one rate limiter.
-- `KpnTokenProvider` with a process-wide, bounded `TokenCache` (sha256-keyed, 5-minute expiry margin, single-flight minting) and 401 refresh-and-retry-once.
-- `HttpClient` with an idempotency-gated retry policy (MSM order POSTs are never retried), repeated-key array params, binary responses and `quota-*` header parsing (`lastQuota`).
-- Error hierarchy (`KpnError` → `AuthenticationError`, `ForbiddenError`, `NotFoundError`, `ValidationError`, `ConflictError`, `RateLimitError`, `ServerError`) and `parseKpnError` covering Apigee, KPN proxy, MSM, CAMARA and token-endpoint envelopes.
-- MSM helpers `buildFilters` and `referenceNumber`.
-- Resources: disturbances, availability, SIM swap, and mobile subscribers, hierarchy, thresholds, invoices, contracts, orders and service requests.
+- OAuth client-credentials token mint and cache (`getAccessToken`), sent as `Authorization: Bearer` by default.
+- `authMode: 'basic' | 'oauth'` for the acceptatie realtime/queued Basic listing.
+- Phase 1 realtime builders and parsers, including `ZipCodeCheckRequest_V6`, plus `postRealtimeXml`.
+- `testConnection()` and `GrexxError.grexxCode` (codes 0, 68, 100–109, and IRMA order statuses 201/203/204/…).

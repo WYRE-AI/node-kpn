@@ -1,6 +1,6 @@
 # Contributing to node-kpn
 
-Thanks for helping improve the KPN API client library.
+Thanks for helping improve the KPN Grexx IRMA client.
 
 ## Development setup
 
@@ -12,7 +12,7 @@ npm install
 ## Workflow
 
 - `npm run build` — tsup dual ESM + CJS build with declarations.
-- `npm test` — vitest + MSW test suite (no network access; MSW errors on any unhandled request).
+- `npm test` — vitest + MSW (no network access; MSW errors on any unhandled request). Do not call live Grexx. Tests must not contain API passwords.
 - `npm run lint` — TypeScript type check (`tsc --noEmit`).
 
 All three must pass before a PR is merged.
@@ -30,9 +30,8 @@ messages must follow [Conventional Commits](https://www.conventionalcommits.org/
 ## Guidelines
 
 - **Zero runtime dependencies.** The SDK uses native `fetch` only; do not add runtime deps.
-- Every new resource or behavior needs MSW-backed tests, including error paths
-  (401/403/404/429/500), and every non-idempotent POST needs a "502 is not retried" test.
-- Keep view-model types all-optional — KPN responses are sparse and every field is optional unless the spec marks it required.
+- New realtime calls need a request builder, a parse helper, and unit tests for the XML. Mock the token endpoint; never point CI at acceptatie.
+- Field names that are not in an XSD stay optional or behind `extra` / `postRealtimeXml`. Do not invent a production base URL.
 - Update `CHANGELOG.md` under `[Unreleased]` following
   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Never commit credentials or fixtures containing real tenant data.

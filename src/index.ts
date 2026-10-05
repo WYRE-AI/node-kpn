@@ -1,48 +1,98 @@
+export { KpnGrexxClient, type ConnectionTestResult } from './client.js';
+export { GrexxAuthorizer, tokenRefreshAt } from './auth.js';
 export {
-  KpnClient,
-  type MobileNamespace,
-  type RealmStatus,
-  type ConnectionTestResult,
-} from './client.js';
-export { DEFAULT_BASE_URL, TOKEN_PATHS, PRODUCT_PATHS, type KpnConfig } from './config.js';
+  GREXX_ACCEPTATIE_BASE_URL,
+  GREXX_ACCEPTATIE_TOKEN_URL,
+  GREXX_CHANNELS,
+  GREXX_XML_CONTENT_TYPE,
+  grexxChannelUrl,
+  grexxConfigFromEnv,
+  grexxTokenUrl,
+  type AuthMode,
+  type CallOptions,
+  type GrexxChannel,
+  type KpnGrexxConfig,
+} from './config.js';
 export {
-  KpnTokenProvider,
-  TokenCache,
-  defaultTokenCache,
-  type AuthProvider,
-  type KpnToken,
-  type KpnTokenProviderOptions,
-} from './auth.js';
+  GATEWAY_CODES,
+  ORDER_STATUSES,
+  describeGrexxCode,
+  orderStatusCodeFromLabel,
+  type GrexxCodeCategory,
+  type GrexxCodeInfo,
+} from './codes.js';
 export {
-  HttpClient,
-  parseQuota,
-  type HttpClientConfig,
-  type RequestOptions,
-  type BinaryResponse,
-  type QuotaInfo,
-} from './http.js';
+  GrexxAuthenticationError,
+  GrexxError,
+  GrexxRateLimitError,
+  GrexxValidationError,
+  type GrexxErrorOptions,
+} from './errors.js';
 export { RateLimiter } from './rate-limiter.js';
 export {
-  KpnError,
-  AuthenticationError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-  ConflictError,
-  RateLimitError,
-  ServerError,
-  ENTITLEMENT_HINT,
-  parseKpnError,
-} from './errors.js';
-export { buildFilters, referenceNumber, type MsmPageParams } from './msm.js';
-export { DisturbancesResource } from './resources/disturbances.js';
-export { AvailabilityResource } from './resources/availability.js';
-export { SimSwapResource } from './resources/sim-swap.js';
-export { MobileSubscribersResource } from './resources/mobile-subscribers.js';
-export { MobileHierarchyResource } from './resources/mobile-hierarchy.js';
-export { MobileThresholdsResource } from './resources/mobile-thresholds.js';
-export { MobileInvoicesResource } from './resources/mobile-invoices.js';
-export { MobileContractsResource } from './resources/mobile-contracts.js';
-export { MobileOrdersResource } from './resources/mobile-orders.js';
-export { MobileServiceRequestsResource } from './resources/mobile-service-requests.js';
-export type * from './types/index.js';
+  parseGrexxResponse,
+  parseTypedResponse,
+  type GrexxOrderStatus,
+  type GrexxParsedResponse,
+} from './response.js';
+export {
+  XML_DECLARATION,
+  assertXmlName,
+  buildRequestXml,
+  elementToValue,
+  escapeXml,
+  parseXmlDocument,
+  resolveRequestBody,
+  serializeFields,
+  type ParsedElement,
+  type XmlObject,
+  type XmlPrimitive,
+  type XmlValue,
+} from './xml.js';
+export {
+  PHASE1_ROOTS,
+  buildAvailablePortingsRequest,
+  buildCarrierInfoRequest,
+  buildCustomerDataRequest,
+  buildGetMobileSettingsRequest,
+  buildGetMobileSubscriptionOrdersRequest,
+  buildGetMobileSubscriptionUsageRequest,
+  buildGetSimCardRequest,
+  buildGetSimRequest,
+  buildOrderDataRequest,
+  buildOrderSummaryRequest,
+  buildPrequalificationRequest,
+  buildRadiusCheckRequest,
+  buildRasCheckRequest,
+  buildStartLineDiagnoseRequest,
+  buildZipCodeCheckRequest,
+  parseAvailablePortingsResponse,
+  parseCarrierInfoResponse,
+  parseCustomerDataResponse,
+  parseGetMobileSettingsResponse,
+  parseGetMobileSubscriptionOrdersResponse,
+  parseGetMobileSubscriptionUsageResponse,
+  parseGetSimCardResponse,
+  parseGetSimResponse,
+  parseOrderDataResponse,
+  parseOrderSummaryResponse,
+  parsePrequalificationResponse,
+  parseRadiusCheckResponse,
+  parseRasCheckResponse,
+  parseStartLineDiagnoseResponse,
+  parseZipCodeCheckResponse,
+  type AvailablePortingsRequest,
+  type CarrierInfoRequest,
+  type CustomerDataRequest,
+  type GetMobileSettingsRequest,
+  type GetMobileSubscriptionOrdersRequest,
+  type GetMobileSubscriptionUsageRequest,
+  type GetSimRequest,
+  type OrderDataRequest,
+  type OrderSummaryRequest,
+  type PrequalificationRequest,
+  type RadiusCheckRequest,
+  type RasCheckRequest,
+  type StartLineDiagnoseRequest,
+  type ZipCodeCheckRequest,
+} from './phase1.js';
