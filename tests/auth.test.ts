@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { AuthenticationError, KpnError, KpnTokenProvider, TOKEN_PATHS, TokenCache } from '../src/index.js';
+import { AuthenticationError, KpnError, KpnTokenProvider, TOKEN_PATHS, TokenCache } from '../src/legacy.js';
 import { gatewayTokenBody, invalidClientBody } from './fixtures/oauth.js';
 import { BASE } from './helpers.js';
 import { server } from './mocks/server.js';

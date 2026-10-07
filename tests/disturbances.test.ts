@@ -7,7 +7,7 @@ import {
   NotFoundError,
   RateLimitError,
   ServerError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { address, disturbanceResultFixture } from './fixtures/network.js';
 import { BASE, makeClient, respondWithError } from './helpers.js';
 import { server } from './mocks/server.js';

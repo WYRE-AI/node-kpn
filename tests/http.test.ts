@@ -14,7 +14,7 @@ import {
   type AuthProvider,
   type BinaryResponse,
   type QuotaInfo,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { gatewayTokenBody, invalidClientBody, invalidTokenFault } from './fixtures/oauth.js';
 import { BASE } from './helpers.js';
 import { server } from './mocks/server.js';

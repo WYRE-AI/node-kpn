@@ -8,7 +8,7 @@ import {
   RateLimitError,
   ServerError,
   ValidationError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import {
   contractDetailsFixture,
   contractFixture,

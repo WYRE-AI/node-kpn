@@ -12,7 +12,7 @@ npm install
 ## Workflow
 
 - `npm run build` — tsup dual ESM + CJS build with declarations.
-- `npm test` — vitest + MSW test suite (no network access; MSW errors on any unhandled request).
+- `npm test` — vitest (no network access). Legacy developer.kpn.com tests use MSW, which errors on any unhandled request. Grexx tests stub `fetch` and must not embed real acceptatie credentials.
 - `npm run lint` — TypeScript type check (`tsc --noEmit`).
 
 All three must pass before a PR is merged.

@@ -8,7 +8,7 @@ import {
   NotFoundError,
   RateLimitError,
   ServerError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { simSwapFixture, unknownPhoneNumberBody } from './fixtures/network.js';
 import { BASE, makeClient, respondWithError } from './helpers.js';
 import { server } from './mocks/server.js';

@@ -7,7 +7,7 @@ import {
   NotFoundError,
   RateLimitError,
   ServerError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { orgContractFixture, page, thresholdFixture } from './fixtures/mobile-org.js';
 import { BASE, makeClient, respondWithError } from './helpers.js';
 import { server } from './mocks/server.js';

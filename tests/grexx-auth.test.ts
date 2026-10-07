@@ -1,0 +1,164 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  GREXX_EXPIRY_MARGIN_MS,
+  GREXX_TOKEN_SCOPE,
+  GrexxAuthenticationError,
+  GrexxTokenCache,
+  GrexxTokenProvider,
+} from '../src/index.js';
+import { TOKEN_BODY, TOKEN_URL, installFetch, jsonResponse } from './grexx-fetch.js';
+
+function provider(overrides: Partial<ConstructorParameters<typeof GrexxTokenProvider>[0]> = {}): GrexxTokenProvider {
+  return new GrexxTokenProvider({
+    tokenUrl: TOKEN_URL,
+    clientId: 'test-user',
+    clientSecret: 'test-secret',
+    cache: new GrexxTokenCache(),
+    ...overrides,
+  });
+}
+
+describe('Grexx OAuth client_credentials', () => {
+  it('POSTs grant_type, client_id, client_secret and scope=all with no Authorization header', async () => {
+    const calls = installFetch(() => jsonResponse(TOKEN_BODY));
+    const header = await provider().authorizationHeader();
+    expect(header).toBe('Bearer test-access-token');
+    expect(calls).toHaveLength(1);
+    const call = calls[0]!;
+    expect(call.method).toBe('POST');
+    expect(call.url).toBe(TOKEN_URL);
+    expect(call.headers.get('authorization')).toBeNull();
+    expect(call.headers.get('content-type')).toBe('application/x-www-form-urlencoded');
+    expect(call.redirect).toBe('error');
+    const form = new URLSearchParams(call.body);
+    expect(form.get('grant_type')).toBe('client_credentials');
+    expect(form.get('client_id')).toBe('test-user');
+    expect(form.get('client_secret')).toBe('test-secret');
+    expect(form.get('scope')).toBe(GREXX_TOKEN_SCOPE);
+    expect(call.body.startsWith('Basic ')).toBe(false);
+    expect(call.headers.has('authorization')).toBe(false);
+  });
+
+  it('form-encodes a client_secret that contains reserved characters', async () => {
+    const calls = installFetch(() => jsonResponse(TOKEN_BODY));
+    await provider({ clientSecret: 'sec&ret=1' }).getToken();
+    const form = new URLSearchParams(calls[0]!.body);
+    expect(form.get('client_secret')).toBe('sec&ret=1');
+    expect(form.get('scope')).toBe('all');
+  });
+
+  it('accepts numeric and string expires_in', async () => {
+    let now = 1_700_000_000_000;
+    installFetch(() => jsonResponse({ ...TOKEN_BODY, expires_in: 3599 }));
+    const numeric = await provider({ now: () => now }).getToken();
+    expect(numeric.expiresAt).toBe(now + 3599 * 1000);
+    expect(numeric.tokenType).toBe('Bearer');
+
+    installFetch(() => jsonResponse({ ...TOKEN_BODY, expires_in: '3599' }));
+    const text = await provider({ now: () => now, cache: new GrexxTokenCache() }).getToken();
+    expect(text.expiresAt).toBe(now + 3599 * 1000);
+  });
+
+  it('reuses a cached token until 60 seconds before expiry', async () => {
+    let now = 1_700_000_000_000;
+    let mints = 0;
+    installFetch(() => {
+      mints += 1;
+      return jsonResponse(TOKEN_BODY);
+    });
+    const cache = new GrexxTokenCache();
+    const first = provider({ cache, now: () => now });
+    await first.getToken();
+    now += 3599 * 1000 - GREXX_EXPIRY_MARGIN_MS - 1_000;
+    await provider({ cache, clientSecret: 'test-secret', now: () => now }).getToken();
+    expect(mints).toBe(1);
+
+    now += 1_000;
+    await provider({ cache, now: () => now }).getToken();
+    expect(mints).toBe(2);
+  });
+
+  it('does not reuse a token after the secret changes', async () => {
+    let mints = 0;
+    installFetch(() => {
+      mints += 1;
+      return jsonResponse(TOKEN_BODY);
+    });
+    const cache = new GrexxTokenCache();
+    await provider({ cache, clientSecret: 'secret-a' }).getToken();
+    await provider({ cache, clientSecret: 'secret-b' }).getToken();
+    expect(mints).toBe(2);
+  });
+
+  it('single-flights concurrent mints', async () => {
+    let mints = 0;
+    installFetch(async () => {
+      mints += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return jsonResponse(TOKEN_BODY);
+    });
+    const cache = new GrexxTokenCache();
+    const tokens = await Promise.all(Array.from({ length: 5 }, () => provider({ cache }).getToken()));
+    expect(mints).toBe(1);
+    expect(new Set(tokens.map((token) => token.accessToken)).size).toBe(1);
+  });
+
+  it('fails closed on token HTTP errors and does not cache them', async () => {
+    installFetch(() => jsonResponse({ error: 'invalid_client', error_description: 'client is invalid' }, 400));
+    const cache = new GrexxTokenCache();
+    const err = await provider({ cache }).getToken().catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect((err as GrexxAuthenticationError).code).toBe('invalid_client');
+    expect((err as GrexxAuthenticationError).message).toContain('Refusing to call /realtime');
+    expect((err as GrexxAuthenticationError).message).not.toContain('test-secret');
+    expect(cache.size).toBe(0);
+  });
+
+  it('fails closed when the token endpoint redirects', async () => {
+    installFetch(() => {
+      throw new TypeError('redirect mode is set to error: https://evil.example/oauth/access_token');
+    });
+    const err = await provider().getToken().catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_redirect');
+    expect((err as GrexxAuthenticationError).message).not.toContain('evil.example');
+    expect((err as GrexxAuthenticationError).message).not.toContain('test-secret');
+  });
+
+  it('fails closed when the token endpoint times out', async () => {
+    installFetch((_call) => {
+      throw Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
+    });
+    const err = await provider().getToken().catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_timeout');
+    expect((err as GrexxAuthenticationError).statusCode).toBe(0);
+  });
+
+  it('fails closed when access_token is missing, token_type is not Bearer, or the token contains a newline', async () => {
+    installFetch(() => jsonResponse({ expires_in: 3599, token_type: 'Bearer' }));
+    await expect(provider().getToken()).rejects.toBeInstanceOf(GrexxAuthenticationError);
+
+    installFetch(() => jsonResponse({ access_token: 'tok', expires_in: 3599, token_type: 'mac' }));
+    await expect(provider({ cache: new GrexxTokenCache() }).getToken()).rejects.toMatchObject({
+      code: 'invalid_token_response',
+    });
+
+    installFetch(() => jsonResponse({ access_token: 'tok\r\nAuthorization: Basic dXNlcjpwYXNz', expires_in: 3599 }));
+    await expect(provider({ cache: new GrexxTokenCache() }).getToken()).rejects.toBeInstanceOf(GrexxAuthenticationError);
+  });
+
+  it('drops a failed mint so the next call can retry', async () => {
+    let mints = 0;
+    installFetch(() => {
+      mints += 1;
+      if (mints === 1) return jsonResponse({ error: 'invalid_client' }, 401);
+      return jsonResponse(TOKEN_BODY);
+    });
+    const cache = new GrexxTokenCache();
+    await expect(provider({ cache }).getToken()).rejects.toBeInstanceOf(GrexxAuthenticationError);
+    await expect(provider({ cache }).getToken()).resolves.toMatchObject({ accessToken: 'test-access-token' });
+    expect(mints).toBe(2);
+  });
+});

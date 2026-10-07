@@ -3,7 +3,7 @@ import type {
   Disturbance,
   DisturbanceResult,
   SimSwapResult,
-} from '../../src/index.js';
+} from '../../src/legacy.js';
 
 // Fictional addresses and numbers only.
 export const address = { zipCode: '1234AB', houseNumber: 10, houseNumberExtension: 'A' };

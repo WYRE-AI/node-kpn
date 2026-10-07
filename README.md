@@ -1,14 +1,13 @@
 # node-kpn
 
-Node.js client library for the [KPN API Store](https://developer.kpn.com/) products an MSP helpdesk needs:
-Disturbance Check, Internet Speed Check, SIM Swap and Mobile Services Management (MSM v11, KPN Zakelijk business mobile).
+Node.js client for KPN IRMA APIs hosted by Grexx (acceptatie: `service-accept.grexx.today`). The v2 surface mints an OAuth 2.0 client-credentials token and POSTs plain XML to `/realtime`.
 
-- Zero runtime dependencies — built on native `fetch` and `node:crypto` (Node 20+).
-- Dual ESM + CJS build with full TypeScript types.
-- Apigee client-credentials OAuth for two realms, with a process-wide token cache and single-flight minting.
-- Token-bucket rate limiting (25 requests / 5 s, conservative — KPN publishes no limits).
-- Safe retries: only idempotent requests are retried. MSM order POSTs (block SIM, authorize…) are **never** retried.
-- Typed error hierarchy (`KpnError` → `AuthenticationError`, `ForbiddenError`, `NotFoundError`, `ValidationError`, `ConflictError`, `RateLimitError`, `ServerError`).
+The previous [developer.kpn.com](https://developer.kpn.com/) client (Disturbance Check, Internet Speed Check, SIM Swap, Mobile Services Management) is still published from `@wyre-ai/node-kpn/legacy`.
+
+- Zero runtime dependencies — native `fetch` and `node:crypto` (Node 20+).
+- Dual ESM + CJS build with TypeScript types.
+- OAuth client-credentials (`scope=all`) with a process-wide token cache. Basic Auth is not sent; Grexx rejects it on `/realtime`.
+- Token-bucket rate limiting (25 requests / 5 s) and typed errors, including IRMA code `108` (Too Many Requests).
 
 ## Install
 
@@ -16,78 +15,100 @@ Disturbance Check, Internet Speed Check, SIM Swap and Mobile Services Management
 npm install @wyre-ai/node-kpn
 ```
 
-The package is published to GitHub Packages under the `@wyre-ai` scope. Configure your `.npmrc`:
+The package is published to GitHub Packages under the `@wyre-ai` scope:
 
 ```
 @wyre-ai:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
+## Auth
+
+Acceptatie (confirmed live 2026-10-07, Grexx ticket #4029) uses **OAuth 2.0 client credentials**, then a Bearer token. Basic Auth returns `403 Auth method Basic not allowed on this endpoint` and is not a fallback.
+
+1. `POST {KPN_GREXX_TOKEN_URL}` with `Content-Type: application/x-www-form-urlencoded` and body `grant_type=client_credentials&client_id={username}&client_secret={password}&scope=all`. The token request itself has no `Authorization` header.
+2. Cache `access_token` until 60 seconds before `expires_in` (acceptatie returns `3599`). Concurrent callers share one mint.
+3. `POST {KPN_GREXX_BASE_URL}/realtime` with `Authorization: Bearer {access_token}` and `Content-Type: text/xml`. The body is plain XML (`ZipCodeCheckRequest_V6`, …), not a SOAP envelope.
+4. On HTTP 401, drop the cached token, mint once more, and retry the XML call once.
+5. If the token endpoint errors, times out, or redirects, the client **fails closed**: it throws `GrexxAuthenticationError` and does not call `/realtime`.
+
+Redirects are not followed on either call, so a token or Bearer credential is not sent to another host.
+
+## Environment
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `KPN_GREXX_USERNAME` | yes | OAuth `client_id` (API username from the Grexx portal, API Gegevens) |
+| `KPN_GREXX_PASSWORD` | yes | OAuth `client_secret` (API password) |
+| `KPN_GREXX_BASE_URL` | yes | Interface root, **without** `/realtime`. No default — acceptatie and production differ. |
+| `KPN_GREXX_TOKEN_URL` | no | Token endpoint. Default: `https://service-accept.grexx.today/oauth/access_token` |
+
+`KPN_GREXX_BASE_URL` is the interface root copied from API Gegevens, for example `https://service-accept.grexx.today/interfaces/kpn/kpn_partners_acceptatieomgeving/<interface-id>/`.
+
+Gateway mode may pass the username and password on `X-KPN-Grexx-Username` and `X-KPN-Grexx-Password` (both, or neither). Those override the env credentials. **Base URL and token URL are env-only.** `GrexxClient.fromEnv` / `resolveGrexxConfig` throw `GrexxConfigError` if a request includes `X-KPN-Grexx-Base-Url`, `X-KPN-Grexx-Token-Url`, or the same headers under the older `X-KPN-*` names. Do not copy those header values into `baseUrl` or `tokenUrl`.
+
 ## Usage
 
 ```ts
-import { KpnClient, buildFilters, referenceNumber } from '@wyre-ai/node-kpn';
+import { GrexxClient } from '@wyre-ai/node-kpn';
 
-const kpn = new KpnClient({
-  clientId: process.env.KPN_CLIENT_ID!,         // developer.kpn.com → Dashboard → Projects
-  clientSecret: process.env.KPN_CLIENT_SECRET!,
-  // Optional: the customer's GRIP-bound MSM app. Falls back to the credentials above.
-  msmClientId: process.env.KPN_MSM_CLIENT_ID,
-  msmClientSecret: process.env.KPN_MSM_CLIENT_SECRET,
+const grexx = GrexxClient.fromEnv();
+
+const check = await grexx.zipCodeCheck({
+  portfolio: 'All',
+  zipCode: '1012JS',
+  houseNumber: 1,
+  isRoomNumberKnown: false,
 });
 
-// Is KPN down at this address?
-const outages = await kpn.disturbances.getByAddress({ zipCode: '1234AB', houseNumber: 1 });
-
-// SIM-swap fraud check before resetting SMS MFA.
-const { latestSimChange } = await kpn.simSwap.retrieveDate('+31600000000');
-
-// Business mobile: find a contract, then block its SIM (creates an asynchronous KPN order).
-const contracts = await kpn.mobile.contracts.list({
-  filters: buildFilters({ MOBILE_NUMBER: ['0600000000'] }),
-  from: 0,
-  to: 20,
-});
-const order = await kpn.mobile.contracts.blockSim({
-  contractId: contracts.result[0]!.id!,
-  referenceNumber: referenceNumber(),
-});
-
-// Which credentials work, and on which tier (demo/prod)?
-console.log(await kpn.testConnection({ includeMsm: true }), kpn.lastQuota);
+console.log(check.code, check.suppliers.map((supplier) => supplier.name));
 ```
 
-## Resources
+`buildZipCodeCheckRequest` emits `ZipCodeCheckRequest_V6` (Portfolio, ZipCode, HouseNr, optional HouseNrExtension / ServiceId / RoomNumber, IsRoomNumberKnown, optional Suppliers). `zipCodeCheck` parses `ZipCodeCheckResponse_V5` (status, suppliers, speeds, copper-off, action required).
 
-| Property | Realm | Endpoints (under `api-prd.kpn.com`) |
-|---|---|---|
-| `disturbances` | gateway | `/network/kpn/disturbance-check/address` |
-| `availability` | gateway | `/network/kpn/internet-speed-check/offer` |
-| `simSwap` | gateway | `/kpn/sim-swap/retrieve-date` |
-| `mobile.subscribers` | msm | `/mobile/kpn/mobileservices/hierarchy/subscribers[/{id}[/contracts]]` |
-| `mobile.hierarchy` | msm | `…/hierarchy/children[/{id}]` |
-| `mobile.thresholds` | msm | `…/contract/thresholds[/{id}/contracts]` |
-| `mobile.invoices` | msm | `…/finances/invoices[/{id}]` (PDF) |
-| `mobile.contracts` | msm | `…/contract/all`, `…/contract/id/{id}[/items]`, `…/order/operations`, `…/order/{block,unblock,replace}-sim` |
-| `mobile.orders` | msm | `…/track-and-trace/orders[/{id}[/pretty\|/cancel]]`, `…/order/authorize` |
-| `mobile.serviceRequests` | msm | `…/track-and-trace/service-requests[/{id}]` |
+Other realtime messages use the same transport:
 
-## API quirks this SDK handles for you
+```ts
+await grexx.postRealtime('CarrierInfoRequest_V1', {
+  // child elements, insertion order, or a prebuilt XML string
+});
+```
 
-- **Two token realms.** `gateway` (`/oauth/client_credential/accesstoken`) and `msm` (`/oauth/grip/msm/accesstoken`). `grant_type` goes in the query string, credentials in a form body. Every value in the token body is a string, `expires_in` included.
-- **Process-wide token cache.** Keyed by `sha256(baseUrl, tokenPath, clientId, clientSecret)`, bounded at 500 entries, re-minted 5 minutes before expiry. Pass `tokenCache` to override.
-- **Token refresh on 401.** A 401, or an Apigee invalid/expired-token fault on any status, evicts the token and retries the request once. A 401 from the token endpoint itself is terminal (`AuthenticationError`, `code: 'invalid_client'`).
-- **Entitlement looks like auth.** A token mints even when the project lacks a product; the call then fails with 401/403. `ForbiddenError` says so explicitly.
-- **MSM is per customer.** The MSM token is bound to one customer's GRIP user; one credential set equals one KPN business customer.
-- **No retries for side effects.** Network errors, 429 and 5xx are retried only for idempotent requests (GETs and the read-only POSTs `/offer`, `/retrieve-date`, `/order/replace-sim/validator`).
-- **Repeated-key arrays.** `status: ['NEW', 'CLOSED']` serializes as `status=NEW&status=CLOSED` (MSM `collectionFormat: multi`).
-- **Quota headers.** `quota-limit`, `quota-used`, `quota-interval`, `quota-time-unit`, `quota-reset-UTC` and `sunset` are exposed as `client.lastQuota` and on `RateLimitError.quota`.
-- **No sandbox.** Test and production share `api-prd.kpn.com`; the tier lives on the account (`level` in `testConnection()`).
+A string whose first element is the root name is sent as that document. Any other string is wrapped in the root element. Object values serialize as nested elements; arrays repeat the element name (`{ Suppliers: { string: ['KPN', 'Tele2Fiber'] } }`).
+
+## Errors and limits
+
+| Condition | Error |
+|---|---|
+| Token endpoint HTTP error, timeout, redirect, or missing `access_token` | `GrexxAuthenticationError` — `/realtime` is not called |
+| HTTP 401 after one remint | `GrexxAuthenticationError` |
+| HTTP 403, or IRMA code `102` | `GrexxForbiddenError` |
+| HTTP 400, or `ValidationError` | `GrexxValidationError` |
+| HTTP 429, or code `108` | `GrexxRateLimitError` (`retryAfter` seconds) |
+| HTTP 5xx, or `UnknownError` | `GrexxServerError` |
+| Bad env or a caller-supplied URL header | `GrexxConfigError` |
+
+Success codes on HTTP 200 are `Success`, legacy `0`, and queued `201` / `204` / `Accepted` / `Active`. Other `Status/Code` values throw. Idempotent `/realtime` calls retry network errors, `108` / 429, and 5xx (default 2 retries). The token endpoint is never retried into a call without a Bearer token. Pass `{ idempotent: false }` to `postRealtime` to disable realtime retries.
+
+`x-request-id` from Grexx is copied onto results and errors.
+
+## Legacy developer.kpn.com
+
+```ts
+import { KpnClient } from '@wyre-ai/node-kpn/legacy';
+
+const kpn = new KpnClient({
+  clientId: process.env.KPN_CLIENT_ID!,
+  clientSecret: process.env.KPN_CLIENT_SECRET!,
+});
+```
+
+That entry point is the v1 Apigee client (gateway + MSM realms, JSON resources). It is unchanged, and it is no longer exported from the package root.
 
 ## Requirements
 
 - Node.js >= 20
-- A KPN API Store project with the relevant products; for MSM, a GRIP-bound MSM app for the customer
+- Grexx API username, password, and interface base URL (portal: API Gegevens). Production token URL and base URL differ from acceptatie.
 
 ## License
 
