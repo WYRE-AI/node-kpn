@@ -39,5 +39,5 @@ Releases are cut automatically by semantic-release from conventional commits.
 
 - Token-response validation errors redact `access_token` and `refresh_token` before the body is attached.
 - Redirects from Node `fetch` (`fetch failed` with `cause` `unexpected redirect`) are classified as redirect failures.
-- `GrexxClient` instances for the same username and realtime URL share one rate-limit bucket.
+- `GrexxClient` instances for the same username and realtime URL share one sliding window of at most 25 requests in any 5 seconds.
 - `postRealtime` retries only when `{ idempotent: true }`. `zipCodeCheck` opts in. Non-XML error bodies keep the vendor HTTP status.

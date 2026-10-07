@@ -10,7 +10,7 @@ import {
   type ResolveGrexxConfigOptions,
 } from './config.js';
 import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
-import { RateLimiter } from '../rate-limiter.js';
+import { SlidingWindowRateLimiter } from './rate-limit.js';
 import { readGrexxStatus, isGrexxSuccessCode } from './status.js';
 import { parseXml, renderRealtimeBody, type XmlObject, type XmlValue } from './xml.js';
 import {
@@ -69,7 +69,7 @@ interface NormalizedBody {
 export class GrexxClient {
   private readonly auth: GrexxTokenProvider;
   private readonly endpoint: string;
-  private readonly rateLimiter: RateLimiter;
+  private readonly rateLimiter: SlidingWindowRateLimiter;
   private readonly maxRetries: number;
   private readonly requestTimeoutMs: number;
 
@@ -301,15 +301,15 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * One bucket per Grexx account. HTTP gateways construct a new client per
- * request; a per-instance bucket would never enforce 25 requests / 5 s.
- * Keyed by the realtime URL and username (not the password). Bounded like
- * the token cache: when full, the oldest account is evicted.
+ * One sliding window per Grexx account. HTTP gateways construct a new client
+ * per request; a per-instance limiter would never enforce 25 requests in any
+ * 5 s. Keyed by the realtime URL and username (not the password). Bounded
+ * like the token cache: when full, the oldest account is evicted.
  */
-const rateLimiters = new Map<string, RateLimiter>();
+const rateLimiters = new Map<string, SlidingWindowRateLimiter>();
 const MAX_RATE_LIMITERS = 500;
 
-export function rateLimiterForAccount(realtimeUrl: string, username: string): RateLimiter {
+export function rateLimiterForAccount(realtimeUrl: string, username: string): SlidingWindowRateLimiter {
   const key = createHash('sha256').update(`${realtimeUrl}\n${username}`).digest('hex');
   const existing = rateLimiters.get(key);
   if (existing) {
@@ -321,7 +321,7 @@ export function rateLimiterForAccount(realtimeUrl: string, username: string): Ra
     const oldest = rateLimiters.keys().next().value;
     if (oldest !== undefined) rateLimiters.delete(oldest);
   }
-  const limiter = new RateLimiter(25, 5_000);
+  const limiter = new SlidingWindowRateLimiter();
   rateLimiters.set(key, limiter);
   return limiter;
 }
