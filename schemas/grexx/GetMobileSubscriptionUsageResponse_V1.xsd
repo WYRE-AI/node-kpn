@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="GetMobileSubscriptionUsageResponse_V1" nillable="true" type="GetMobileSubscriptionUsageResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Response bericht op GetMobileSubscriptionUsageRequest</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:complexType name="GetMobileSubscriptionUsageResponse_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Status" type="Status_V1">        </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>IRMA Order ID van het mobiele nummer waarvoor het actuele verbruik moet worden opgehaald.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="MobileSubscriptionUsage" type="MobileSubscriptionUsage_V1">        </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success">        </xs:enumeration>
+      <xs:enumeration value="ValidationError">        </xs:enumeration>
+      <xs:enumeration value="UnKnownError">        </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="MobileSubscriptionUsage_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="CustomerId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>ID van de betreffende klant</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Mobiele nummer behoorende bij de order</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DataBundleValue" nillable="true" type="xs:double">
+        <xs:annotation>
+          <xs:documentation>De grootte van de databundel. Indien nill en als UomData niet nill is, dan is de databundel onbeperkt.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DataCurrentValue" nillable="true" type="xs:double">
+        <xs:annotation>
+          <xs:documentation>Het actuele verbruik van de databundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="UomData" nillable="true" type="UnitOfMeasurement_V1">
+        <xs:annotation>
+          <xs:documentation>Eenheid van de databundel. Indien nill, dan is er geen databundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="VoiceBundleValue" nillable="true" type="xs:double">
+        <xs:annotation>
+          <xs:documentation>De grootte van de spraakbundel. Indien nill en als UomVoice niet nill is, dan is de spraakbundel onbeperkt.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="VoiceCurrentValue" nillable="true" type="xs:double">
+        <xs:annotation>
+          <xs:documentation>Het actuele verbruik van de spraakbundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="UomVoice" nillable="true" type="UnitOfMeasurement_V1">
+        <xs:annotation>
+          <xs:documentation>Eenheid van de spraakbundel. Indien nill, dan is er geen spraakbundelbundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="SmsBundleValue" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>De grootte van de SMS bundel. Indien nill en als UomSms niet nill is, dan is de SMS bundel onbeperkt.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="SmsCurrentValue" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het actuele verbuik van de SMS bundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="UomSms" nillable="true" type="UnitOfMeasurement_V1">
+        <xs:annotation>
+          <xs:documentation>Eenheid van de SMS bundel. Indien nill, dan is er geen SMS bundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Amount" nillable="true" type="xs:double">
+        <xs:annotation>
+          <xs:documentation>Extra kosten buiten de bundel.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="UomAmount" nillable="true" type="UnitOfMeasurement_V1">
+        <xs:annotation>
+          <xs:documentation>Eenheid van de extra kosten</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="UnitOfMeasurement_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Euro">
+        <xs:annotation>
+          <xs:documentation>Eenheid voor de extra kosten</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="MB">
+        <xs:annotation>
+          <xs:documentation>Eenheid voor de databundel (Mega Bytes)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Minutes">
+        <xs:annotation>
+          <xs:documentation>Eenheid voor de spraakbundel</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Events">
+        <xs:annotation>
+          <xs:documentation>Eenheid voor de SMS bundel</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="ZipCodeCheckResponse_V5" nillable="true" type="ZipCodeCheckResponse_V5" />
+  <xs:complexType name="ZipCodeCheckResponse_V5">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Status" type="Status_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="AvailableSuppliers" type="ArrayOfAvailableSupplier_V5" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString" />
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success" />
+      <xs:enumeration value="UnknownError" />
+      <xs:enumeration value="ValidationError" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ArrayOfAvailableSupplier_V5">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="AvailableSupplier_V5" nillable="true" type="AvailableSupplier_V5" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AvailableSupplier_V5">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Name" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="LocationInfo" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="AvailableSpeeds" type="ArrayOfAvailableSpeed_V4" />
+      <xs:element minOccurs="0" maxOccurs="1" name="CopperOff" type="CopperOff_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ActionRequired" type="ActionRequired_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfAvailableSpeed_V4">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="AvailableSpeed_V4" nillable="true" type="AvailableSpeed_V4" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AvailableSpeed_V4">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Availability" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string" />
+      <xs:element minOccurs="1" maxOccurs="1" name="NlsType" nillable="true" type="NlsType_V2" />
+      <xs:element minOccurs="0" maxOccurs="1" name="Remarks" type="ArrayOfString" />
+      <xs:element minOccurs="0" maxOccurs="1" name="Technology" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="TariffCluster" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="PlanDate" nillable="true" type="xs:dateTime" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CopperOff_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="EndOfSaleDate" type="xs:dateTime" />
+      <xs:element minOccurs="0" maxOccurs="1" name="EndOfLifeDate" type="xs:dateTime" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ActionRequired_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="ActionText" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ActionUri" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="NlsType_V2">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Nls1" />
+      <xs:enumeration value="Nls2" />
+      <xs:enumeration value="Nls3" />
+      <xs:enumeration value="Nls4" />
+      <xs:enumeration value="Nls6" />
+      <xs:enumeration value="Nls7" />
+      <xs:enumeration value="Nls8" />
+      <xs:enumeration value="Nls9" />
+      <xs:enumeration value="Nls11" />
+      <xs:enumeration value="Nls21" />
+      <xs:enumeration value="Nls23" />
+      <xs:enumeration value="Nls24" />
+      <xs:enumeration value="NlsIO" />
+      <xs:enumeration value="NlsNO" />
+      <xs:enumeration value="NlsHbob" />
+      <xs:enumeration value="NlsHbor" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

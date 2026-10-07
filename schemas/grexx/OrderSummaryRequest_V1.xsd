@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="OrderSummaryRequest_V1" nillable="false" type="OrderSummaryRequest_V1" />
+  <xs:complexType name="OrderSummaryRequest_V1">
+    <xs:annotation>
+      <xs:documentation>Met dit verzoek kan er een samenvatting van de verschillende orders op een klantkaart worden opgevraagd. Er zijn maximaal 2500 orders per call op te vragen. Mochten er meer orders opgevraagd moeten worden, kan er middels de 'skip' een volgende set worden opgehaald</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="CustomerId" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Id van de klantkaart</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="OrderState" nillable="true" type="OrderState_V1">
+        <xs:annotation>
+          <xs:documentation>Alleen orders met een bepaalde status</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ProductGroup" nillable="true" type="ProductGroup_V1">
+        <xs:annotation>
+          <xs:documentation>Alleen orders van deze productgroep</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ProductName" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Alleen orders met het gespecificeerde product</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DateActiveFrom" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Alleen orders die vanaf dit moment actief zijn</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DateActiveTo" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Alleen orders die voor dit moment actief zijn</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DateModifiedFrom" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Alleen orders die gewijzigd zijn vanaf dit moment</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DateModifiedTo" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Alleen orders die gewijzigd zijn voor dit moment</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Label" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Alleen orders waarin de gespecificeerde tekst in het label voorkomt</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Attribute" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Alleen orders waarin de gespecificeerde tekst in het kenmerk voorkomt</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Skip" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Hoeveel orders in het zoekresultaat overgeslagen dienen te worden</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Take" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Aantal op te halen orders. Maximum is 2500</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="OrderState_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Activate">
+        <xs:annotation>
+          <xs:documentation>Activeren</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Activating">
+        <xs:annotation>
+          <xs:documentation>Bezig met activeren</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Active">
+        <xs:annotation>
+          <xs:documentation>Actief</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Update">
+        <xs:annotation>
+          <xs:documentation>Bewerken</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Updating">
+        <xs:annotation>
+          <xs:documentation>Bezig met bewerken</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Terminate">
+        <xs:annotation>
+          <xs:documentation>Opheffen</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Terminating">
+        <xs:annotation>
+          <xs:documentation>Bezig met opheffen</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Terminated">
+        <xs:annotation>
+          <xs:documentation>Opgeheven</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Cancelled">
+        <xs:annotation>
+          <xs:documentation>Geannuleerd</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Rejected">
+        <xs:annotation>
+          <xs:documentation>Afgewezen</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ActionRequired">
+        <xs:annotation>
+          <xs:documentation>Actie gevraagd</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="PendingParent">
+        <xs:annotation>
+          <xs:documentation>Activatie wacht op gerelateerde order</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="WaitForInvoicing">
+        <xs:annotation>
+          <xs:documentation>Wacht op facturatie</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Invoicing">
+        <xs:annotation>
+          <xs:documentation>Wordt gefactureerd</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="InvoicingCompleted">
+        <xs:annotation>
+          <xs:documentation>Facturatie afgerond</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="UpdateActionRequired">
+        <xs:annotation>
+          <xs:documentation>Actie wijziging gevraagd</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Completed">
+        <xs:annotation>
+          <xs:documentation>Afgerond (eenmalige orders)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ProductGroup_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Connectivity" />
+      <xs:enumeration value="Security" />
+      <xs:enumeration value="Storage">
+        <xs:annotation>
+          <xs:documentation>Nieuwe naam: DataCenter</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Internet" />
+      <xs:enumeration value="Voip" />
+      <xs:enumeration value="Additional" />
+      <xs:enumeration value="Mobile" />
+      <xs:enumeration value="Cloud" />
+      <xs:enumeration value="Services247" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

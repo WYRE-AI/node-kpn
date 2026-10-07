@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="CarrierInfoResponse_V1" nillable="true" type="CarrierInfoResponse_V1" />
+  <xs:complexType name="CarrierInfoResponse_V1">
+    <xs:annotation>
+      <xs:documentation>Een CarrierInfoResponse Infra informatie terug voor een locatie. Een CarrierInfoResponse volgt op een CarrierInfoRequest.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="ProductType" type="ProductType_V1">
+        <xs:annotation>
+          <xs:documentation>Type product waarvoor de check gedaan wordt. Mogelijke waarden: xDSL, FttH, WeasFiber, All. Voorbeeld: xDSL.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bevat een eventuele foutmelding. Voorbeeld: Opgegeven adres is onbekend of niet beschikbaar voor de gevraagde technologie</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ZipCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De postcode waarvoor de check gedaan wordt</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het huisnummer waarvoor de check gedaan wordt. Voorbeeld: 10</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNumberExt" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De huisnummer toevoeging waarvoor de check gedaan wordt. Voorbeeld: a</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Street" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De straat waarvoor de check gedaan wordt. Voorbeeld: Maxwellstraat</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="City" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De plaats waarvoor de check gedaan wordt. Voorbeeld: Ede</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="MainPhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het telefoonnummer waarvoor de check gedaan wordt. Alleen van toepassing voor ProductType xDSL. Voorbeeld: 0884372636</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentTeleponeType" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het type van de telefoonaansluiting waarvoor de check gedaan wordt. Mogelijke waarden: ISDN, POTS, MI, MP.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="PhoneHasDifferentAddress" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Is true wanneer het werkelijke adres, behorende bij het opgegeven telefoonnummer, afwijkt van het opgegeven adres maar het numerieke deel van de postcode                      wel correct is. Voorbeeld: true</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DistributionPoint" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>                       Distributiepunt.       </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FtthNlsType" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Geplande NLS-type voor ProductType FttH. Mogelijke waarden: NL6, NL7, NL8, NL9. De laagste NL-type waarde van de ftth connectionpoints wordt getoond</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="AdditionalXdfAccessServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Extra serviceId (alleen ingevuld indien het adres BVDSL heeft)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PossibleAddresses" type="ArrayOfPossibleAddresses_V1">
+        <xs:annotation>
+          <xs:documentation>Optioneel. Wanneer de huisnummertoevoeging niet bestaat en er geen ander veld in het request gebruikt kan worden om de verbinding te identificeren. </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="XdslConnectionPoints" type="ArrayOfXdslConnectionPoint_V1">
+        <xs:annotation>
+          <xs:documentation>Elke xDSL aansluiting (ISRA) komt in een aparte node te staan met daaronder de informatie over de aansluiting</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FtthConnectionPoints" type="ArrayOfFtthConnectionPoint_V1">
+        <xs:annotation>
+          <xs:documentation>Elke FttH aansluiting (ISRA) komt in een aparte node te staan met daaronder de informatie over de aansluiting</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Comments" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>Opmerkingen</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="WeasFiberConnections" type="ArrayOfFiberConnection_V1">
+        <xs:annotation>
+          <xs:documentation>Elke Weas Fiber aansluiting komt in een aparte node te staan met daaronder de informatie over de aansluiting</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="ProductType_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="xDSL" />
+      <xs:enumeration value="FttH" />
+      <xs:enumeration value="WeasFiber" />
+      <xs:enumeration value="All" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ArrayOfPossibleAddresses_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="PossibleAddresses_V1" nillable="true" type="PossibleAddresses_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PossibleAddresses_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="DistributionPoint" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Distributiepunt</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Addresses" type="ArrayOfAddressOrderStatus_V1">
+        <xs:annotation>
+          <xs:documentation>Lijst van mogelijke adressen</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfAddressOrderStatus_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="AddressOrderStatus_V1" nillable="true" type="AddressOrderStatus_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AddressOrderStatus_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNumber" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNumberExt" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="ZipCode" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="OrderStatus" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bestelstatus: open, closed, planned)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfXdslConnectionPoint_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="XdslConnectionPoint_V1" nillable="true" type="XdslConnectionPoint_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="XdslConnectionPoint_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="IsraName" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Naam van het ISRA punt</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="IsNls3" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Betreft het een NewLineService type 3</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="NumberOfNls1LinesAvailable" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Aantal beschikbare NLS1 lijnen</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="NumberOfNls2LinesAvailable" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Aantal beschikbare NLS2 lijnen</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="XdslConnections" type="ArrayOfXdslConnection_V1">
+        <xs:annotation>
+          <xs:documentation>Elke xDSL-verbinding komt in een aparte node te staan met daaronder de informatie over de verbinding</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Remarks" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Opmerkingen</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfXdslConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="XdslConnection_V1" nillable="true" type="XdslConnection_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="XdslConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentTypeOfConnection" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Huidig verbindingstype</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Huidig Service ID</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentPhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Huidig telefoonnummer</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FutureTypeOfConnection" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Toekomstig verbindingstype</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FutureServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Toekomstig Service ID</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FuturePhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Toekomstig telefoonnummer</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfFtthConnectionPoint_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="FtthConnectionPoint_V1" nillable="true" type="FtthConnectionPoint_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FtthConnectionPoint_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="FiberTerminationPointId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Kamernummer</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FtuType" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Type FiberTerminationUnit</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FtthConnections" type="ArrayOfFtthConnection_V1">
+        <xs:annotation>
+          <xs:documentation>Elke FttH-verbinding komt in een aparte node te staan met daaronder de informatie over de verbinding</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FtthNlsType" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>NLS-type voor ProductType FttH. Mogelijke waarden: NL6, NL7, NL8, NL9.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PlanDate" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Plandatum voor aanleg infrastructuur. Let op; deze datum is puur een indicatie</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfFtthConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="FtthConnection_V1" nillable="true" type="FtthConnection_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FtthConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentTypeOfConnection" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Huidig verbindingstype</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CurrentConnectionId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Huidige verbinding ID</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FutureTypeOfConnection" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Toekomstig verbindingstype</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="FutureConnectionId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Toekomstig Verbinding ID</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfFiberConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="FiberConnection_V1" nillable="true" type="FiberConnection_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FiberConnection_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="AccessId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Access ID van de Fiber connectie</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="IsWsoWsoMigrationPossible" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Is WSO-WSO migratie mogelijk?</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

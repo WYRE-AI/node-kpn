@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="RadiusCheckResponse_V1" nillable="true" type="RadiusCheckResponse_V1" />
+  <xs:complexType name="RadiusCheckResponse_V1">
+    <xs:annotation>
+      <xs:documentation>          Een RadiusCheckResponse geeft het resultaat van de Radius check terug voor een order. Een RadiusCheckResponse volgt op een RadiusCheckReqeust.        </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bevat een eventuele foutmelding.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ResponseItems" type="ArrayOfRadiusCheckResponseItem_V1">
+        <xs:annotation>
+          <xs:documentation>              Resultaten per login poging            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfRadiusCheckResponseItem_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="RadiusCheckResponseItem_V1" nillable="true" type="RadiusCheckResponseItem_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RadiusCheckResponseItem_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Status" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Status. Mogelijke waardes: Success, Failed            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Nas" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Node            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Password" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Wachtwoord            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="User" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Gebruikers            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Action" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Actie. Mogelijke waardes: Login            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="DateCreated" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>              Datum en tijd van login poging.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

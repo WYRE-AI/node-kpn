@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="AvailablePortingsRequest_V1" nillable="true" type="AvailablePortingsRequest_V1" />
+  <xs:complexType name="AvailablePortingsRequest_V1">
+    <xs:annotation>
+      <xs:documentation>         Geeft een lijst van beschikbare porteringen voor alle mobiele abonnementen van het opgegeven MobileSubscripionCustomerId,         of voor alle HIP nummers van het opgegeven HipGroupOrderId.       </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="MobileSubscripionCustomerId" nillable="true">
+        <xs:annotation>
+          <xs:documentation>Irma customer id.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:int">
+            <xs:minInclusive value="1" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HipGroupOrderId" nillable="true">
+        <xs:annotation>
+          <xs:documentation>Order id van een HIP Groep / HIP Express Office Telefooncentrale / KPN ??N Telefooncentrale.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:int">
+            <xs:minInclusive value="1" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

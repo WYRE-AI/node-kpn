@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="ZipCodeCheckRequest_V6" nillable="false" type="ZipCodeCheckRequest_V6" />
+  <xs:complexType name="ZipCodeCheckRequest_V6">
+    <xs:annotation>
+      <xs:documentation>          Met een ZipCodeCheckRequest kan gecontroleerd worden welke verbindingssnelheden en technologie?n er beschikbaar zijn op een bepaalde locatie.          Een ZipCodeCheckRequest krijgt als reactie een ZipCodeCheckResponse.        </xs:documentation>
+    </xs:annotation>
+    <xs:all>
+      <xs:element minOccurs="1" maxOccurs="1" name="Portfolio" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Mogelijke waarden: Business, SMB, Teleworker, All.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="ZipCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De postcode waarvoor de check gedaan wordt. Voorbeeld: 1122AB</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HouseNr" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het huisnummer waarvoor de check gedaan wordt. Voorbeeld: 10</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNrExtension" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Optioneel. De toevoeging bij het huisnummer. Voorbeeld: a</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Optioneel. Het ServiceID van de lijn. Alleen van toepassing bij leverancier KPN. Voorbeeld: ABC1234567890</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="RoomNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Optioneel. De kamernummer. Voorbeeld: kamer 1</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="IsRoomNumberKnown" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Is het kamernummer bekend?</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Suppliers" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>                Optioneel. Leveranciers waarvoor de check gedaan wordt. Mogelijke waarden (meerdere mogelijk): KPN, KPNWEAS, Eurofiber, Tele2, Tele2Fiber, CAIW, OverigeAanbieders.                * Indien leeg dan wordt de check voor alle leveranciers uitgevoerd.                * Voor Odido zal Tele2 gebruikt worden.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

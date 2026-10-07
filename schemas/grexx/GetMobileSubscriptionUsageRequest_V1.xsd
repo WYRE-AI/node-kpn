@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="GetMobileSubscriptionUsageRequest_V1" nillable="false" type="GetMobileSubscriptionUsageRequest_V1">
+    <xs:annotation>
+      <xs:documentation>Met een GetMobileSubscriptionUsageRequest kan het actueel verbruik van een mobielnummer worden opgevraagd vanaf 5 minuten na activatie van het abonnement.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:complexType name="GetMobileSubscriptionUsageRequest_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>IRMA Order ID van het mobiele nummer waarvoor het verbruik moet worden opgehaald.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

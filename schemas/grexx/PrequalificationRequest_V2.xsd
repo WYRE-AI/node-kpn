@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="PrequalificationRequest_V2" nillable="true" type="PrequalificationRequest_V2" />
+  <xs:complexType name="PrequalificationRequest_V2">
+    <xs:all>
+      <xs:element name="ZipCode" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>                          De postcode van het adres waarvoor de prequalificatie gedaan wordt.                            Op de PREP/PRE Productieomgeving kan getest worden met postcode 9999ZZ en huisnummer 1.                      </xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HouseNr" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het huisnummer waarvoor de prequalification uitgevoerd moet worden.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="HouseNrExtension" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De toevoeging bij het huisnummer.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="RoomNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het kamernummer.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HasBroadband" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Geeft aan of op dit moment breedband aanwezig is. Bij true moet het veld ServiceId of ReferencePhoneNumber gevuld worden.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="HasPhone" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Geeft aan of telefonie al beschikbaar is.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="OrderId" minOccurs="0" maxOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+            <xs:pattern value="OID[0-9]+" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PhoneNumber" type="xs:string" />
+      <xs:element name="ProductTypeCode" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>                          Het product waarvoor de controle uitgevoerd moet worden. Mogelijke waarden:                          ADSLTele, VDSLTele, FTTHTele, ADSLSMB, VDSLSMB, FTTHSMB, VDSLZakelijk, ADSLZakelijk, SDSL, FIBER.                      </xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ReferencePhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Referentie telefoonnummer.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ServiceId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation> Het serviceId zoals bekend bij de provider.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Suppliers" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>                          Mogelijke leveranciers zijn: Kpn, KpnWeas, Caiw, Eurofiber, Tele2, Tele2Fiber                            De onderstaande leveranciers kunnen Fiber leveren:                          KpnWeas, Eurofiber, Tele2Fiber.                            Bij een lege lijst, zullen alle mogelijke leveranciers opgevraagd worden.                      </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="IsraSpecs" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="1" name="IsComplexAddress" type="xs:boolean" />
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="CustomerDataRequest_V1" nillable="true" type="CustomerDataRequest_V1" />
+  <xs:complexType name="CustomerDataRequest_V1">
+    <xs:annotation>
+      <xs:documentation>Met een CustomerDataRequest kunnen klantgegevens worden opgevraagd. Zonder parameters worden alle klanten teruggeven, anders wordt er gezocht op de opgegeven parameters. Een CustomerDataRequest krijgt als antwoord een CustomerDataResponse.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Id" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Het ID van de klant zoals bekend in Irma. Voorbeeld: 28665.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Name" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De naam van de klant.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Street" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De straatnaam van de klant. Voorbeeld: Maxwellstraat.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ZipCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De postcode van de klant. Voorbeeld: 6716BX.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="City" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De woonplaats van de klant. Voorbeeld: Ede</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="CountryCode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>De landcode van de klant. Mogelijke waardes: BEL, DEU, FRA, NLD.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Phone1" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het eerste telefoonnummer van de klant. Voorbeeld: 0884372636.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Phone2" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het tweede telefoonnummer van de klant (bijv. mobiel). Voorbeeld: 0612345678.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="DebitNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Debiteurnummer van de klant. Voorbeeld: 123.456            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ExternalId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              ExternalId van de klant. Voorbeeld 123.456            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ChamberOfCommerceNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              Kamer van koophandel nummer van de klant. Voorbeeld: 0123456            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="VATNr" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>              BTW nummer van de klant. Voorbeeld: NL123456            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="IncludeInactiveCustomers" nillable="true" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Geeft aan of inactieve klanten ook teruggeven moeten worden. Voorbeeld: true. Indien leeggelaten worden alleen actieve klanten teruggeven.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="OrderByMember" nillable="true" type="CustomerDataOrderByMember_V1">
+        <xs:annotation>
+          <xs:documentation>              Naam van het veld in de response waarop gesorteerd moet worden. Indien leeggelaten wordt gesorteerd op Id.            </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="OrderByDescending" nillable="true" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Geeft aan of aflopend gesorteerd moet worden. Voorbeeld: true. Indien leeggelaten wordt oplopend gesorteerd.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Skip" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Aantal records/klanten dat moet worden overgeslagen (om te pagineren). Voorbeeld: 20. Default: 0</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Take" nillable="true" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Aantal records/klanten dat moet worden opgehaald. Max. 100. Voorbeeld: 20. Default: 20.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="CustomerDataOrderByMember_V1">
+    <xs:annotation>
+      <xs:documentation>Velden waarop gesorteerd kan worden.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Id" />
+      <xs:enumeration value="Name" />
+      <xs:enumeration value="Street" />
+      <xs:enumeration value="ZipCode" />
+      <xs:enumeration value="City" />
+      <xs:enumeration value="Phone1" />
+      <xs:enumeration value="Phone2" />
+      <xs:enumeration value="DateCreated" />
+      <xs:enumeration value="IsActive" />
+      <xs:enumeration value="ExternalId" />
+      <xs:enumeration value="DebitNr" />
+      <xs:enumeration value="FirstBillingDate" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

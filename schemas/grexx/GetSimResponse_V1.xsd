@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="GetSimResponse_V1" nillable="false" type="GetSimResponse_V1" />
+  <xs:complexType name="GetSimResponse_V1">
+    <xs:all>
+      <xs:element minOccurs="1" maxOccurs="1" name="Status" type="Status_V1" />
+      <xs:element minOccurs="1" maxOccurs="1" name="Sim" type="Sim_V1">
+        <xs:annotation>
+          <xs:documentation>De SIM-gegevens van de mobiele order.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:all>
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>Eventuele opmerkingen bij de statuscode</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:all>
+      <xs:element minOccurs="0" name="string" nillable="true" type="xs:string" />
+    </xs:all>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success" />
+      <xs:enumeration value="UnknownError" />
+      <xs:enumeration value="ValidationError" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="Sim_V1">
+    <xs:all>
+      <xs:element minOccurs="1" maxOccurs="1" name="SimType" type="SimType_V1">
+        <xs:annotation>
+          <xs:documentation>Type van de sim.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ICCId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Het simkaartnummer van het te bestellen abonnement.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Puc1">
+        <xs:annotation>
+          <xs:documentation>PUK code van de simkaart.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="SimCard" type="SimCard_V4">
+        <xs:annotation>
+          <xs:documentation>De SIM-kaartgegevens van het te bestellen abonnement. Altijd gevuld behalve bij                          een nog niet actieve PortingNoSimSwap.                      </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="ESim" type="ESim_V1">
+        <xs:annotation>
+          <xs:documentation>ESim info</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+  <xs:simpleType name="SimType_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Physical" />
+      <xs:enumeration value="ESim" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="SimCard_V4">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Puc1">
+        <xs:annotation>
+          <xs:documentation>Vervallen. PUK code is verplaatst naar Sim_V1.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ESim_V1">
+    <xs:all>
+      <xs:element minOccurs="1" maxOccurs="1" name="SmdpAddress">
+        <xs:annotation>
+          <xs:documentation>De volledige domeinnaam van SM-DP+.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="64" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="ActivationCode">
+        <xs:annotation>
+          <xs:documentation>De code om het eSIM-profiel te kunnen downloaden.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="ConfirmationCode">
+        <xs:annotation>
+          <xs:documentation>De code om het gebruik van het eSIM-profiel te autoriseren.</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+</xs:schema>

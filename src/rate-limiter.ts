@@ -1,7 +1,7 @@
 /**
- * Token-bucket rate limiter. KPN publishes no numeric limits (quotas surface
- * only as `quota-*` response headers), so the client defaults to a
- * conservative 25 requests / 5 s (5 rps sustained) shared by both realms.
+ * Token-bucket rate limiter. Grexx signals overload with gateway code 108
+ * (Too Many Requests). The published acceptatie/production spreadsheet is not
+ * encoded here, so the client stays conservative: 25 requests / 5 s.
  */
 export class RateLimiter {
   private tokens: number;

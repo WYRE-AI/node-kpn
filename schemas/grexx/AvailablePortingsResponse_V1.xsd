@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="AvailablePortingsResponse_V1" nillable="true" type="AvailablePortingsResponse_V1" />
+  <xs:complexType name="AvailablePortingsResponse_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="Status" type="Status_V1" />
+      <xs:element minOccurs="0" maxOccurs="1" name="AvailablePortings" type="ArrayOfAvailablePorting_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Status_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="Messages" type="ArrayOfString">
+        <xs:annotation>
+          <xs:documentation>Bevat eventuele opmerkingen bij de statuscode.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="Code" type="StatusCode_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfString">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="StatusCode_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Success" />
+      <xs:enumeration value="UnknownError" />
+      <xs:enumeration value="ValidationError" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ArrayOfAvailablePorting_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="AvailablePorting_V1" nillable="true" type="AvailablePorting_V1">
+        <xs:annotation>
+          <xs:documentation>Beschikbare porteringen voor het gegeven customer id of HIP group order id.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AvailablePorting_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="1" name="PortingId" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Portering id. Max 100 karakters.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="FirstPossiblePortingDate" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Eerst mogelijke porteerdatum.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="PlannedPortingDate" nillable="true" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>Geplande porteerdatum.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="Numbers" type="ArrayOfAvailablePortingNumber_V1">
+        <xs:annotation>
+          <xs:documentation>De orders met telefoonnummers</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="1" name="PortingContractType" type="PortingContractType_V1">
+        <xs:annotation>
+          <xs:documentation>Type om aan te geven wat voor een variant portering het betreft. Mogelijke opties zijn FirstPossibleDate, Continuation en EarlyTermination.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfAvailablePortingNumber_V1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="AvailablePortingNumber_V1" nillable="true" type="AvailablePortingNumber_V1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AvailablePortingNumber_V1">
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>Order id van een HIP phonenumber / HIP Express nummer / KPN EEN nummer order of Mobile subscription order.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="PhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Telefoonnummer. Bij een reeks nummers (alleen voor VOIP) wordt hier het eerste nummer van de reeks getoond. Voorbeeld: 0612345678 of 08001234567.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="LastPhoneNumber" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Bevat het laatste nummer van een eventuele reeks nummers van de order, of indien het om een order met ??n nummer gaat wordt het enige nummer hier herhaald. Voorbeeld: Voorbeeld: 0612345678 of 08001234567.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="PortingContractType_V1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="FirstPossibleDate">
+        <xs:annotation>
+          <xs:documentation>Wij verzoeken de latende serviceprovider de eerst mogelijke porteerdatum kenbaar te maken. U heeft dit reeds afgestemd met uw klant, zodat de portering binnen 120 dagen kan worden uitgevoerd</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Continuation">
+        <xs:annotation>
+          <xs:documentation>Wij melden de latende serviceprovider, dat de klant het bij hen lopende contract wil uitdienen conform contractvoorwaarden. Daarnaast heeft de klant bij u een overeenkomst gesloten, welke ingaat op het moment dat u de portering uitvoert. U bent hiervoor in het bezit van een getekende volmacht.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="EarlyTermination">
+        <xs:annotation>
+          <xs:documentation>Wij melden de latende serviceprovider, dat de klant het bij hen lopende contract wil be?indigen. De klant heeft bij u een overeenkomst gesloten, welke ingaat op het moment dat u de portering uitvoert. Klant gaat ermee akkoord dat er mogelijk een afkoopsom in rekening wordt. U bent hiervoor in het bezit van een getekende volmacht.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

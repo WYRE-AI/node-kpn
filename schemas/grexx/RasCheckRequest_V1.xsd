@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="RasCheckRequest_V1" nillable="true" type="RasCheckRequest_V1" />
+  <xs:complexType name="RasCheckRequest_V1">
+    <xs:annotation>
+      <xs:documentation>          Met deze test kan er o.a. gekeken worden of er een PPP (Point to Point Protocol) sessie actief staat en welk IP-Adres de verbinding krijgt.          Een RasCheckRequest krijgt als reactie een RasCheckResponse.        </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="1" maxOccurs="1" name="OrderId" type="xs:int">
+        <xs:annotation>
+          <xs:documentation>De order waarvoor de check gedaan wordt. Voorbeeld: 123456</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
