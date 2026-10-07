@@ -97,6 +97,21 @@ function describeBody(body: unknown): { message?: string; code?: string } {
   };
 }
 
+/**
+ * Node's `fetch` with `redirect: 'error'` throws `TypeError: fetch failed`
+ * and puts the redirect text on `error.cause` (`unexpected redirect`).
+ */
+export function isRedirectError(err: unknown): boolean {
+  return /redirect/i.test(errorMessages(err));
+}
+
+function errorMessages(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  const cause = err.cause;
+  const causeText = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
+  return causeText.length > 0 ? `${err.message}\n${causeText}` : err.message;
+}
+
 /** Map a Grexx or OAuth failure onto the typed error hierarchy. */
 export function parseGrexxError(
   status: number,

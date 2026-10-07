@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { GrexxTokenProvider } from './auth.js';
 import {
   DEFAULT_GREXX_TOKEN_URL,
@@ -7,7 +9,7 @@ import {
   type GrexxConfig,
   type ResolveGrexxConfigOptions,
 } from './config.js';
-import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, parseGrexxError } from './errors.js';
+import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 import { RateLimiter } from '../rate-limiter.js';
 import { readGrexxStatus, isGrexxSuccessCode } from './status.js';
 import { parseXml, renderRealtimeBody, type XmlObject, type XmlValue } from './xml.js';
@@ -38,7 +40,10 @@ export interface GrexxRealtimeResult {
 export interface PostRealtimeOptions {
   /**
    * Retry network errors, HTTP 429 / code 108, and 5xx.
-   * Default true: realtime reads are safe to repeat.
+   * Default false: `postRealtime` carries any IRMA root, including writes.
+   * A timeout can happen after Grexx has accepted the request, so a retry
+   * would submit it twice. Reads such as {@link GrexxClient.zipCodeCheck} opt in.
+   * A 401 still remints once for every call: the request was rejected.
    * Token mint failures are never retried into a Bearer-less call.
    */
   idempotent?: boolean;
@@ -84,7 +89,7 @@ export class GrexxClient {
       ...(config.tokenTimeoutMs !== undefined ? { timeoutMs: config.tokenTimeoutMs } : {}),
       ...(config.now ? { now: config.now } : {}),
     });
-    this.rateLimiter = new RateLimiter(25, 5_000);
+    this.rateLimiter = rateLimiterForAccount(this.endpoint, username);
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.requestTimeoutMs = config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
   }
@@ -111,7 +116,7 @@ export class GrexxClient {
     options: PostRealtimeOptions = {},
   ): Promise<GrexxRealtimeResult> {
     const xml = renderRealtimeBody(rootElement, body);
-    const idempotent = options.idempotent ?? true;
+    const idempotent = options.idempotent ?? false;
     const maxRetries = idempotent ? this.maxRetries : 0;
     let attempt = 0;
     let reminted = false;
@@ -153,7 +158,7 @@ export class GrexxClient {
         continue;
       }
 
-      const normalized = normalizeBody(raw);
+      const normalized = normalizeBody(raw, response.ok);
 
       if (response.ok) {
         if (!normalized.document || !normalized.rootElement) {
@@ -201,7 +206,7 @@ export class GrexxClient {
   /** `ZipCodeCheckRequest_V6` → parsed `ZipCodeCheckResponse_V5`. */
   async zipCodeCheck(input: ZipCodeCheckInput): Promise<ZipCodeCheckResult> {
     const xml = buildZipCodeCheckRequest(input);
-    const result = await this.postRealtime(ZIP_CODE_CHECK_REQUEST_ELEMENT, xml);
+    const result = await this.postRealtime(ZIP_CODE_CHECK_REQUEST_ELEMENT, xml, { idempotent: true });
     if (result.rootElement !== ZIP_CODE_CHECK_RESPONSE_ELEMENT) {
       throw new GrexxError(
         `Expected ${ZIP_CODE_CHECK_RESPONSE_ELEMENT} but received <${result.rootElement}>`,
@@ -237,7 +242,7 @@ function splitMessages(message: string | undefined): string[] {
   return message.split('; ').filter((item) => item.length > 0);
 }
 
-function normalizeBody(raw: string): NormalizedBody {
+function normalizeBody(raw: string, ok: boolean): NormalizedBody {
   const trimmed = raw.trim();
   if (trimmed.startsWith('<')) {
     try {
@@ -252,6 +257,9 @@ function normalizeBody(raw: string): NormalizedBody {
         raw,
       };
     } catch (err) {
+      // An HTML 502/503 (often `<!DOCTYPE html>`) must keep the vendor status
+      // so it is still a GrexxServerError and can be retried when opted in.
+      if (!ok) return { raw, message: trimmed.slice(0, 500) || undefined };
       if (err instanceof GrexxError) throw err;
       throw new GrexxError('Grexx realtime response was not valid XML', 0, raw, 'invalid_xml', undefined, { cause: err });
     }
@@ -264,8 +272,7 @@ function normalizeBody(raw: string): NormalizedBody {
 }
 
 function realtimeTransportError(err: unknown): GrexxServerError {
-  const message = err instanceof Error ? err.message : String(err);
-  const redirected = /redirect/i.test(message);
+  const redirected = isRedirectError(err);
   return new GrexxServerError(
     redirected
       ? 'Grexx realtime endpoint redirected. Refusing to follow the redirect.'
@@ -291,4 +298,30 @@ function retryDelay(error: GrexxRateLimitError, attempt: number): number {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * One bucket per Grexx account. HTTP gateways construct a new client per
+ * request; a per-instance bucket would never enforce 25 requests / 5 s.
+ * Keyed by the realtime URL and username (not the password). Bounded like
+ * the token cache: when full, the oldest account is evicted.
+ */
+const rateLimiters = new Map<string, RateLimiter>();
+const MAX_RATE_LIMITERS = 500;
+
+export function rateLimiterForAccount(realtimeUrl: string, username: string): RateLimiter {
+  const key = createHash('sha256').update(`${realtimeUrl}\n${username}`).digest('hex');
+  const existing = rateLimiters.get(key);
+  if (existing) {
+    rateLimiters.delete(key);
+    rateLimiters.set(key, existing);
+    return existing;
+  }
+  if (rateLimiters.size >= MAX_RATE_LIMITERS) {
+    const oldest = rateLimiters.keys().next().value;
+    if (oldest !== undefined) rateLimiters.delete(oldest);
+  }
+  const limiter = new RateLimiter(25, 5_000);
+  rateLimiters.set(key, limiter);
+  return limiter;
 }

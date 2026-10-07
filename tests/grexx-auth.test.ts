@@ -117,13 +117,33 @@ describe('Grexx OAuth client_credentials', () => {
 
   it('fails closed when the token endpoint redirects', async () => {
     installFetch(() => {
-      throw new TypeError('redirect mode is set to error: https://evil.example/oauth/access_token');
+      // Node fetch (`redirect: 'error'`) shape: message is "fetch failed",
+      // and the redirect text is on `cause`.
+      throw new TypeError('fetch failed', { cause: new Error('unexpected redirect: https://evil.example/oauth/access_token') });
     });
     const err = await provider().getToken().catch((error: unknown) => error);
     expect(err).toBeInstanceOf(GrexxAuthenticationError);
     expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_redirect');
     expect((err as GrexxAuthenticationError).message).not.toContain('evil.example');
     expect((err as GrexxAuthenticationError).message).not.toContain('test-secret');
+  });
+
+  it('redacts access_token and refresh_token on a rejected token response', async () => {
+    installFetch(() =>
+      jsonResponse({
+        access_token: 'live-bearer-token',
+        refresh_token: 'live-refresh-token',
+        expires_in: 'soon',
+        token_type: 'Bearer',
+      }),
+    );
+    const err = await provider().getToken().catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    const response = (err as GrexxAuthenticationError).response as Record<string, unknown>;
+    expect(response['access_token']).toBe('[redacted]');
+    expect(response['refresh_token']).toBe('[redacted]');
+    expect(JSON.stringify(err)).not.toContain('live-bearer-token');
+    expect(JSON.stringify(err)).not.toContain('live-refresh-token');
   });
 
   it('fails closed when the token endpoint times out', async () => {

@@ -88,7 +88,7 @@ A string whose first element is the root name is sent as that document. Any othe
 | HTTP 5xx, or `UnknownError` | `GrexxServerError` |
 | Bad env or a caller-supplied URL header | `GrexxConfigError` |
 
-Success codes on HTTP 200 are `Success`, legacy `0`, and queued `201` / `204` / `Accepted` / `Active`. Other `Status/Code` values throw. Idempotent `/realtime` calls retry network errors, `108` / 429, and 5xx (default 2 retries). The token endpoint is never retried into a call without a Bearer token. Pass `{ idempotent: false }` to `postRealtime` to disable realtime retries.
+Success codes on HTTP 200 are `Success`, legacy `0`, and queued `201` / `204` / `Accepted` / `Active`. Other `Status/Code` values throw. `postRealtime` does not retry network errors, `108` / 429, or 5xx unless you pass `{ idempotent: true }` — a timeout can arrive after Grexx has already accepted a write. `zipCodeCheck` opts in (up to 2 retries). A 401 still drops the cached token and retries that call once. The token endpoint is never retried into a call without a Bearer token. Clients for the same username and base URL share one 25-request / 5 s bucket.
 
 `x-request-id` from Grexx is copied onto results and errors.
 

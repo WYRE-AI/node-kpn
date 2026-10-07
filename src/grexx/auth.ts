@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { GrexxAuthenticationError, parseGrexxError } from './errors.js';
+import { GrexxAuthenticationError, isRedirectError, parseGrexxError } from './errors.js';
 
 /** Re-mint this long before `expires_in` (observed 3599s on acceptatie). */
 export const GREXX_EXPIRY_MARGIN_MS = 60_000;
@@ -165,12 +165,13 @@ export class GrexxTokenProvider {
     }
 
     const record = parsed as Record<string, unknown>;
+    const redacted = redactTokenResponse(record);
     const accessToken = record['access_token'];
     if (typeof accessToken !== 'string' || accessToken.length === 0 || /[\r\n]/.test(accessToken)) {
       throw new GrexxAuthenticationError(
         'Grexx token endpoint returned no access_token. Refusing to call /realtime without a token.',
         response.status,
-        parsed,
+        redacted,
         'invalid_token_response',
         requestId,
       );
@@ -181,7 +182,7 @@ export class GrexxTokenProvider {
       throw new GrexxAuthenticationError(
         `Grexx token endpoint returned token_type "${tokenType}", expected Bearer. Refusing to call /realtime.`,
         response.status,
-        parsed,
+        redacted,
         'invalid_token_response',
         requestId,
       );
@@ -198,7 +199,7 @@ export class GrexxTokenProvider {
       throw new GrexxAuthenticationError(
         'Grexx token endpoint returned no expires_in. Refusing to call /realtime without a token.',
         response.status,
-        parsed,
+        redacted,
         'invalid_token_response',
         requestId,
       );
@@ -214,11 +215,17 @@ export class GrexxTokenProvider {
   }
 }
 
+function redactTokenResponse(record: Record<string, unknown>): Record<string, unknown> {
+  const redacted = { ...record };
+  if ('access_token' in redacted) redacted['access_token'] = '[redacted]';
+  if ('refresh_token' in redacted) redacted['refresh_token'] = '[redacted]';
+  return redacted;
+}
+
 function tokenTransportError(err: unknown): GrexxAuthenticationError {
   const name = err instanceof Error ? err.name : '';
-  const message = err instanceof Error ? err.message : String(err);
   const timedOut = name === 'TimeoutError' || name === 'AbortError';
-  const redirected = /redirect/i.test(message);
+  const redirected = isRedirectError(err);
   const code = timedOut ? 'token_endpoint_timeout' : redirected ? 'token_endpoint_redirect' : 'token_endpoint_unreachable';
   const detail = timedOut
     ? 'Grexx token endpoint timed out. Refusing to call /realtime without a token.'

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   GrexxAuthenticationError,
   GrexxForbiddenError,
-  GrexxRateLimitError,
   GrexxServerError,
   GrexxValidationError,
 } from '../src/index.js';
+import { rateLimiterForAccount } from '../src/grexx/client.js';
 import {
   BASE_URL,
   REALTIME_URL,
@@ -190,7 +190,7 @@ describe('GrexxClient /realtime', () => {
     expect(calls.every((call) => !String(call.headers.get('authorization')).startsWith('Basic'))).toBe(true);
   });
 
-  it('retries HTTP 502 on an idempotent realtime call and not when retries are disabled', async () => {
+  it('retries HTTP 502 for zipCodeCheck and not for postRealtime by default', async () => {
     let hits = 0;
     installFetch((call) => {
       if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
@@ -206,9 +206,49 @@ describe('GrexxClient /realtime', () => {
       once += 1;
       return new Response('bad gateway', { status: 502 });
     });
-    const err = await makeGrexx({ maxRetries: 0 }).postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>', { idempotent: false }).catch((error: unknown) => error);
+    const err = await makeGrexx({ maxRetries: 3 })
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
     expect(err).toBeInstanceOf(GrexxServerError);
     expect(once).toBe(1);
+  });
+
+  it('keeps the vendor status when an error body is HTML', async () => {
+    let realtime = 0;
+    installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      realtime += 1;
+      return new Response('<!DOCTYPE html><html><body>bad gateway</body></html>', {
+        status: 503,
+        headers: { 'content-type': 'text/html' },
+      });
+    });
+    const err = await makeGrexx({ maxRetries: 3 })
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxServerError);
+    expect((err as GrexxServerError).statusCode).toBe(503);
+    expect((err as GrexxServerError).code).not.toBe('invalid_xml');
+    expect(realtime).toBe(1);
+  });
+
+  it('classifies a realtime redirect reported on error.cause', async () => {
+    installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      throw new TypeError('fetch failed', { cause: new Error('unexpected redirect') });
+    });
+    const err = await makeGrexx()
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxServerError);
+    expect((err as GrexxServerError).code).toBe('realtime_redirect');
+  });
+
+  it('shares one rate limiter for the same account and not across usernames', () => {
+    const shared = rateLimiterForAccount(REALTIME_URL, 'shared-user');
+    expect(rateLimiterForAccount(REALTIME_URL, 'shared-user')).toBe(shared);
+    expect(rateLimiterForAccount(`${REALTIME_URL}/`, 'shared-user')).not.toBe(shared);
+    expect(rateLimiterForAccount(REALTIME_URL, 'other-user')).not.toBe(shared);
   });
 
   it('strips a trailing slash from the base URL and never appends a caller header URL', async () => {
