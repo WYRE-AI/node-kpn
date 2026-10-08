@@ -7,7 +7,7 @@ import {
   NotFoundError,
   RateLimitError,
   ServerError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import {
   msmPage,
   serviceRequestDetailsFixture,

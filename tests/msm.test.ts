@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFilters, referenceNumber } from '../src/index.js';
+import { buildFilters, referenceNumber } from '../src/legacy.js';
 
 describe('buildFilters', () => {
   it('builds COL: "value" clauses joined by "; "', () => {

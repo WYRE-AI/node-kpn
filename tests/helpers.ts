@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
-import { KpnClient, TokenCache } from '../src/index.js';
+import { KpnClient, TokenCache } from '../src/legacy.js';
 import { server } from './mocks/server.js';
 
 export const BASE = 'https://api-prd.kpn.com';

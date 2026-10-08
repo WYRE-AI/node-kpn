@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { RateLimiter } from '../src/index.js';
+import { RateLimiter } from '../src/legacy.js';
 
 describe('RateLimiter', () => {
   it('allows a burst up to maxRequests without waiting', async () => {

@@ -23,11 +23,21 @@ Releases are cut automatically by semantic-release from conventional commits.
 
 ## [Unreleased]
 
+### Breaking
+
+- The package entry point is now the Grexx/IRMA client (`GrexxClient`). Acceptatie auth is OAuth 2.0 `client_credentials` with a Bearer token on `POST /realtime` (plain XML, no SOAP). Basic Auth is not implemented.
+- The developer.kpn.com client (`KpnClient`, Disturbance Check, Internet Speed Check, SIM Swap, MSM) moved to `@wyre-ai/node-kpn/legacy`.
+
 ### Added
 
-- `KpnClient` with two OAuth realms (gateway and Mobile Services Management) sharing one rate limiter.
-- `KpnTokenProvider` with a process-wide, bounded `TokenCache` (sha256-keyed, 5-minute expiry margin, single-flight minting) and 401 refresh-and-retry-once.
-- `HttpClient` with an idempotency-gated retry policy (MSM order POSTs are never retried), repeated-key array params, binary responses and `quota-*` header parsing (`lastQuota`).
-- Error hierarchy (`KpnError` → `AuthenticationError`, `ForbiddenError`, `NotFoundError`, `ValidationError`, `ConflictError`, `RateLimitError`, `ServerError`) and `parseKpnError` covering Apigee, KPN proxy, MSM, CAMARA and token-endpoint envelopes.
-- MSM helpers `buildFilters` and `referenceNumber`.
-- Resources: disturbances, availability, SIM swap, and mobile subscribers, hierarchy, thresholds, invoices, contracts, orders and service requests.
+- `GrexxClient.postRealtime(rootElement, bodyXmlOrObject)` — mints and caches an OAuth access token (`scope=all`), then POSTs `text/xml` with `Authorization: Bearer`. Tokens are reused until 60 seconds before `expires_in` and reminted once after HTTP 401. Token-endpoint errors, timeouts, and redirects fail closed (no `/realtime` call, no Basic fallback).
+- `buildZipCodeCheckRequest` / `GrexxClient.zipCodeCheck` for `ZipCodeCheckRequest_V6` → `ZipCodeCheckResponse_V5`.
+- Env configuration: `KPN_GREXX_USERNAME`, `KPN_GREXX_PASSWORD`, `KPN_GREXX_BASE_URL` (required), `KPN_GREXX_TOKEN_URL` (default `https://service-accept.grexx.today/oauth/access_token`). Gateway headers may supply the username and password only; base URL and token URL headers are rejected.
+- Grexx error types (`GrexxAuthenticationError`, `GrexxForbiddenError`, `GrexxValidationError`, `GrexxRateLimitError` for HTTP 429 and code 108, `GrexxServerError`, `GrexxConfigError`).
+
+### Fixed
+
+- Token-response validation errors redact `access_token` and `refresh_token` before the body is attached.
+- Redirects from Node `fetch` (`fetch failed` with `cause` `unexpected redirect`) are classified as redirect failures.
+- `GrexxClient` instances for the same username and realtime URL share one sliding window of at most 25 requests in any 5 seconds.
+- `postRealtime` retries only when `{ idempotent: true }`. `zipCodeCheck` opts in. Non-XML error bodies keep the vendor HTTP status.

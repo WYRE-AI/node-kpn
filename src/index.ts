@@ -1,48 +1,70 @@
+/**
+ * `@wyre-ai/node-kpn` v2 — Grexx/IRMA client (OAuth client_credentials, plain XML).
+ *
+ * The developer.kpn.com client (Disturbance Check, SIM Swap, MSM) lives at
+ * `@wyre-ai/node-kpn/legacy`.
+ */
+export { GrexxClient, type GrexxRealtimeResult, type PostRealtimeOptions } from './grexx/client.js';
 export {
-  KpnClient,
-  type MobileNamespace,
-  type RealmStatus,
-  type ConnectionTestResult,
-} from './client.js';
-export { DEFAULT_BASE_URL, TOKEN_PATHS, PRODUCT_PATHS, type KpnConfig } from './config.js';
+  DEFAULT_GREXX_TOKEN_URL,
+  GREXX_USERNAME_HEADER,
+  GREXX_PASSWORD_HEADER,
+  assertGrexxHttpsUrl,
+  grexxConfigFromEnv,
+  grexxRealtimeUrl,
+  resolveGrexxConfig,
+  type GrexxConfig,
+  type GrexxEnv,
+  type GrexxHeaderSource,
+  type ResolveGrexxConfigOptions,
+} from './grexx/config.js';
 export {
-  KpnTokenProvider,
-  TokenCache,
-  defaultTokenCache,
-  type AuthProvider,
-  type KpnToken,
-  type KpnTokenProviderOptions,
-} from './auth.js';
+  GREXX_EXPIRY_MARGIN_MS,
+  GREXX_TOKEN_SCOPE,
+  GrexxTokenCache,
+  GrexxTokenProvider,
+  defaultGrexxTokenCache,
+  type GrexxToken,
+  type GrexxTokenProviderOptions,
+} from './grexx/auth.js';
 export {
-  HttpClient,
-  parseQuota,
-  type HttpClientConfig,
-  type RequestOptions,
-  type BinaryResponse,
-  type QuotaInfo,
-} from './http.js';
+  ZIP_CODE_CHECK_REQUEST_ELEMENT,
+  ZIP_CODE_CHECK_RESPONSE_ELEMENT,
+  ZIP_CODE_PORTFOLIOS,
+  ZIP_CODE_SUPPLIERS,
+  buildZipCodeCheckRequest,
+  parseZipCodeCheckResponse,
+  zipCodeCheckFields,
+  type ZipCodeActionRequired,
+  type ZipCodeAvailableSpeed,
+  type ZipCodeAvailableSupplier,
+  type ZipCodeCheckInput,
+  type ZipCodeCheckResult,
+  type ZipCodeCheckSource,
+  type ZipCodeCopperOff,
+  type ZipCodePortfolio,
+  type ZipCodeSupplier,
+} from './grexx/zipcode.js';
+export {
+  buildXmlDocument,
+  escapeXml,
+  parseXml,
+  renderRealtimeBody,
+  type XmlNode,
+  type XmlObject,
+  type XmlValue,
+} from './grexx/xml.js';
+export { isGrexxSuccessCode, readGrexxStatus } from './grexx/status.js';
 export { RateLimiter } from './rate-limiter.js';
 export {
-  KpnError,
-  AuthenticationError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-  ConflictError,
-  RateLimitError,
-  ServerError,
-  ENTITLEMENT_HINT,
-  parseKpnError,
-} from './errors.js';
-export { buildFilters, referenceNumber, type MsmPageParams } from './msm.js';
-export { DisturbancesResource } from './resources/disturbances.js';
-export { AvailabilityResource } from './resources/availability.js';
-export { SimSwapResource } from './resources/sim-swap.js';
-export { MobileSubscribersResource } from './resources/mobile-subscribers.js';
-export { MobileHierarchyResource } from './resources/mobile-hierarchy.js';
-export { MobileThresholdsResource } from './resources/mobile-thresholds.js';
-export { MobileInvoicesResource } from './resources/mobile-invoices.js';
-export { MobileContractsResource } from './resources/mobile-contracts.js';
-export { MobileOrdersResource } from './resources/mobile-orders.js';
-export { MobileServiceRequestsResource } from './resources/mobile-service-requests.js';
-export type * from './types/index.js';
+  GrexxAuthenticationError,
+  GrexxConfigError,
+  GrexxError,
+  GrexxForbiddenError,
+  GrexxNotFoundError,
+  GrexxRateLimitError,
+  GrexxServerError,
+  GrexxValidationError,
+  parseGrexxError,
+  type GrexxErrorHints,
+} from './grexx/errors.js';

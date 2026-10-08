@@ -16,7 +16,7 @@ import {
   SimSwapResource,
   TOKEN_PATHS,
   TokenCache,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { invalidClientBody } from './fixtures/oauth.js';
 import { BASE, makeClient } from './helpers.js';
 import { server } from './mocks/server.js';

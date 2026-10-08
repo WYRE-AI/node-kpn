@@ -7,7 +7,7 @@ import {
   NotFoundError,
   RateLimitError,
   ServerError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 import { invoiceFixture, invoicePdfBytes, page } from './fixtures/mobile-org.js';
 import { BASE, makeClient, respondWithError } from './helpers.js';
 import { server } from './mocks/server.js';

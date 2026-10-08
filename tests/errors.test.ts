@@ -11,7 +11,7 @@ import {
   ServerError,
   ValidationError,
   parseKpnError,
-} from '../src/index.js';
+} from '../src/legacy.js';
 
 describe('parseKpnError envelopes', () => {
   it('Apigee fault: code = errorcode, message = faultstring', () => {

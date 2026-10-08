@@ -1,7 +1,7 @@
 {
   "name": "@wyre-ai/node-kpn",
   "version": "1.0.1",
-  "description": "Node.js client library for the KPN API Store (Disturbance Check, Internet Speed Check, SIM Swap, Mobile Services Management)",
+  "description": "Node.js client for KPN IRMA on Grexx (OAuth client-credentials, plain XML). Legacy developer.kpn.com client is at @wyre-ai/node-kpn/legacy.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./legacy": {
+      "import": {
+        "types": "./dist/legacy.d.ts",
+        "default": "./dist/legacy.js"
+      },
+      "require": {
+        "types": "./dist/legacy.d.cts",
+        "default": "./dist/legacy.cjs"
       }
     }
   },
@@ -38,10 +48,10 @@
   },
   "keywords": [
     "kpn",
+    "grexx",
+    "irma",
+    "zipcode-check",
     "kpn-zakelijk",
-    "mobile-services-management",
-    "sim-swap",
-    "disturbance-check",
     "msp",
     "api-client"
   ],
