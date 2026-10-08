@@ -103,7 +103,7 @@ const kpn = new KpnClient({
 });
 ```
 
-That entry point is the v1 Apigee client (gateway + MSM realms, JSON resources). It is unchanged, and it is no longer exported from the package root.
+That entry point is the v1 Apigee client (gateway + MSM realms, JSON resources). It is unchanged, and it is no longer exported from the package root. [kpn-mcp](https://github.com/WYRE-AI/kpn-mcp) must move its imports and test mocks to `@wyre-ai/node-kpn/legacy`, and depend on a release that exports that entry point, before upgrading. That migration is [kpn-mcp#3](https://github.com/WYRE-AI/kpn-mcp/pull/3) on branch `cursor/grexx-mcp-tools-0694`.
 
 ## Requirements
 
