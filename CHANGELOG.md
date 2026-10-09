@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+### Added
+
+- `buildPrequalificationRequest` / `GrexxClient.prequalification` for `PrequalificationRequest_V2` → `PrequalificationResponse_V1`. PREP can be tested with ZipCode `9999ZZ` and HouseNr `1`. `HasBroadband` true requires `ServiceId` or `ReferencePhoneNumber`. `OrderId`, when set, must match `OID` plus digits. `ErrorClass` and `ErrorMessage` are returned on the result.
+- `buildOrderDataRequest` / `GrexxClient.orderData` for `OrderDataRequest_V1` → `OrderDataResponse_V1` (`Status` `Success` | `UnknownError` | `ValidationError`, optional `Order`). `parseOrderDataResponse` returns validation and unknown-error statuses as data. `orderData` still throws those codes through the existing realtime error mapping. Both reads opt in to the realtime retry policy.
+
 ### Fixed
 
 - Grexx token acquisition sends HTTP Basic first. `client_id` and `client_secret` are encoded with `application/x-www-form-urlencoded` (RFC 6749 Appendix B; a space is `+`) before base64. The body is `grant_type=client_credentials&scope=all`. Form-body credentials are used only when Basic returns HTTP 400 or 401 `invalid_client`, and that failure includes the form attempt's redacted reason. A form-body HTTP 5xx is an upstream unavailable error, not a credential rejection. The token URL must be https before any Basic header is sent. Every non-empty client secret is redacted from token errors; an empty secret is left unchanged.

@@ -66,6 +66,25 @@ console.log(check.code, check.suppliers.map((supplier) => supplier.name));
 
 `buildZipCodeCheckRequest` emits `ZipCodeCheckRequest_V6` (Portfolio, ZipCode, HouseNr, optional HouseNrExtension / ServiceId / RoomNumber, IsRoomNumberKnown, optional Suppliers). `zipCodeCheck` parses `ZipCodeCheckResponse_V5` (status, suppliers, speeds, copper-off, action required).
 
+`buildPrequalificationRequest` emits `PrequalificationRequest_V2` (ZipCode, HouseNr, HasBroadband, HasPhone, ProductTypeCode, plus optional extension, room, phone, order, supplier, and Isra fields). On PREP, ZipCode `9999ZZ` and HouseNr `1` are the documented test values. `HasBroadband: true` requires `serviceId` or `referencePhoneNumber`. `orderId`, when set, must match `OID` followed by digits (`OID[0-9]+`). `productTypeCode` is one of `ADSLTele`, `VDSLTele`, `FTTHTele`, `ADSLSMB`, `VDSLSMB`, `FTTHSMB`, `VDSLZakelijk`, `ADSLZakelijk`, `SDSL`, `FIBER`. Suppliers, when set, are `Kpn`, `KpnWeas`, `Caiw`, `Eurofiber`, `Tele2`, `Tele2Fiber` (`<string>` children; omit or pass `[]` for every supplier). `prequalification` parses `PrequalificationResponse_V1` (address, nillable `NlsType`, remarks, and `AvailabilityProduct_V1` with availability `Unknown` | `Red` | `Yellow` | `Green`). `errorClass` and `errorMessage` are returned on the result.
+
+`buildOrderDataRequest` emits `OrderDataRequest_V1` (`OrderId`, an `xs:int`). `orderData` parses `OrderDataResponse_V1`: required `Status` (`Success`, `UnknownError`, or `ValidationError`, optional messages) and optional `Order` (`CustomerId`, `ProductCode` of 1–13 characters, `Quantity`). `parseOrderDataResponse` returns validation and unknown-error statuses as data. `GrexxClient.orderData` still posts through `/realtime`, so those status codes throw the same way as other realtime calls.
+
+```ts
+const prequal = await grexx.prequalification({
+  zipCode: '9999ZZ',
+  houseNumber: 1,
+  hasBroadband: false,
+  hasPhone: false,
+  productTypeCode: 'FTTHTele',
+});
+
+console.log(prequal.nlsType, prequal.errorClass, prequal.products.map((product) => product.availability));
+
+const order = await grexx.orderData({ orderId: 12345 });
+console.log(order.status.code, order.order?.productCode);
+```
+
 Other realtime messages use the same transport:
 
 ```ts
@@ -88,7 +107,7 @@ A string whose first element is the root name is sent as that document. Any othe
 | HTTP 5xx, or `UnknownError` | `GrexxServerError` |
 | Bad env or a caller-supplied URL header | `GrexxConfigError` |
 
-Success codes on HTTP 200 are `Success`, legacy `0`, and queued `201` / `204` / `Accepted` / `Active`. Other `Status/Code` values throw. `postRealtime` does not retry network errors, `108` / 429, or 5xx unless you pass `{ idempotent: true }` — a timeout can arrive after Grexx has already accepted a write. `zipCodeCheck` opts in (up to 2 retries). A 401 still drops the cached token and retries that call once. The token endpoint is never retried into a call without a Bearer token. Clients for the same username and base URL share one limiter: at most 25 requests in any 5 seconds.
+Success codes on HTTP 200 are `Success`, legacy `0`, and queued `201` / `204` / `Accepted` / `Active`. Other `Status/Code` values throw. `postRealtime` does not retry network errors, `108` / 429, or 5xx unless you pass `{ idempotent: true }` — a timeout can arrive after Grexx has already accepted a write. `zipCodeCheck`, `prequalification`, and `orderData` opt in (up to 2 retries). A 401 still drops the cached token and retries that call once. The token endpoint is never retried into a call without a Bearer token. Clients for the same username and base URL share one limiter: at most 25 requests in any 5 seconds. Prequalification `ErrorClass` / `ErrorMessage` are fields on the parsed result, not a `Status/Code`, so they do not throw.
 
 `x-request-id` from Grexx is copied onto results and errors.
 
