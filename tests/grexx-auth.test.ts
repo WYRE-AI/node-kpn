@@ -4,6 +4,8 @@ import {
   GREXX_EXPIRY_MARGIN_MS,
   GREXX_TOKEN_SCOPE,
   GrexxAuthenticationError,
+  GrexxConfigError,
+  GrexxServerError,
   GrexxTokenCache,
   GrexxTokenProvider,
 } from '../src/index.js';
@@ -26,8 +28,8 @@ function decodedBasic(header: string | null): { clientId: string; clientSecret: 
   expect(colon).toBeGreaterThan(0);
   return {
     raw,
-    clientId: decodeURIComponent(raw.slice(0, colon)),
-    clientSecret: decodeURIComponent(raw.slice(colon + 1)),
+    clientId: decodeURIComponent(raw.slice(0, colon).replace(/\+/g, '%20')),
+    clientSecret: decodeURIComponent(raw.slice(colon + 1).replace(/\+/g, '%20')),
   };
 }
 
@@ -45,8 +47,9 @@ describe('Grexx OAuth client_credentials', () => {
     const basic = decodedBasic(call.headers.get('authorization'));
     expect(basic.clientId).toBe("id !*'():");
     expect(basic.clientSecret).toBe('sec&ret=1 +');
-    expect(basic.raw).toBe("id%20%21%2A%27%28%29%3A:sec%26ret%3D1%20%2B");
-    expect(basic.raw).not.toContain('+');
+    expect(basic.raw).toBe("id+%21%2A%27%28%29%3A:sec%26ret%3D1+%2B");
+    expect(basic.raw).not.toContain('%20');
+    expect(basic.raw).toContain('+');
     const form = new URLSearchParams(call.body);
     expect(form.get('grant_type')).toBe('client_credentials');
     expect(form.get('scope')).toBe(GREXX_TOKEN_SCOPE);
@@ -100,9 +103,64 @@ describe('Grexx OAuth client_credentials', () => {
     expect(authError.statusCode).toBe(401);
     expect(authError.message).toContain('HTTP Basic');
     expect(authError.message).toContain('form-body');
+    expect(authError.message).toContain('client is invalid');
     expect(authError.message).toContain('Refusing to call /realtime');
+    expect(authError.message).toContain('rejected');
     expect(authError.message).not.toContain('test-secret');
     expect(JSON.stringify(authError)).not.toContain('test-secret');
+  });
+
+  it('reports a form-body 5xx as unavailable and keeps the redacted vendor reason', async () => {
+    const calls = installFetch((call) => {
+      if (call.headers.get('authorization')?.startsWith('Basic ')) {
+        return jsonResponse({ error: 'invalid_client' }, 401);
+      }
+      return jsonResponse({ error: 'server_error', error_description: 'upstream exploded with test-secret' }, 503);
+    });
+    const err = await provider().getToken().catch((error: unknown) => error);
+    expect(calls).toHaveLength(2);
+    expect(err).toBeInstanceOf(GrexxServerError);
+    const serverError = err as GrexxServerError;
+    expect(serverError.statusCode).toBe(503);
+    expect(serverError.code).toBe('server_error');
+    expect(serverError.message).toMatch(/unavailable/i);
+    expect(serverError.message).toContain('upstream exploded with [redacted]');
+    expect(serverError.message).toContain('form-body');
+    expect(serverError.message).not.toMatch(/rejected/i);
+    expect(JSON.stringify(serverError)).not.toContain('test-secret');
+  });
+
+  it('redacts 1-3 character secrets and does not rewrite an empty secret', async () => {
+    installFetch(() =>
+      jsonResponse({ error: 'invalid_client', error_description: 'echo p@s in the body' }, 400),
+    );
+    const short = await provider({ clientSecret: 'p@s' }).getToken().catch((error: unknown) => error);
+    expect(short).toBeInstanceOf(GrexxAuthenticationError);
+    expect((short as GrexxAuthenticationError).message).toContain('echo [redacted] in the body');
+    expect((short as GrexxAuthenticationError).message).not.toContain('p@s');
+    expect(JSON.stringify(short)).not.toContain('p@s');
+
+    installFetch(() => jsonResponse({ error: 'invalid_client', error_description: 'client is invalid' }, 401));
+    const empty = await provider({ clientId: 'test-user', clientSecret: '' }).getToken().catch((error: unknown) => error);
+    expect(empty).toBeInstanceOf(GrexxAuthenticationError);
+    expect((empty as GrexxAuthenticationError).message).toContain('client is invalid');
+    expect((empty as GrexxAuthenticationError).message).not.toContain('[redacted]');
+  });
+
+  it('rejects a non-HTTPS token URL before sending the Basic header', async () => {
+    const calls = installFetch(() => jsonResponse(TOKEN_BODY));
+    const cleartext = await provider({ tokenUrl: 'http://token.example/oauth/access_token' })
+      .getToken()
+      .catch((error: unknown) => error);
+    expect(cleartext).toBeInstanceOf(GrexxConfigError);
+    expect((cleartext as Error).message).toMatch(/https/);
+    expect((cleartext as Error).message).not.toContain('test-secret');
+
+    const localhost = await provider({ tokenUrl: 'http://localhost/oauth/access_token' })
+      .getToken()
+      .catch((error: unknown) => error);
+    expect(localhost).toBeInstanceOf(GrexxConfigError);
+    expect(calls).toHaveLength(0);
   });
 
   it('does not fall back when Basic fails with something other than invalid_client', async () => {

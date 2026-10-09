@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Fixed
+
+- Grexx token acquisition sends HTTP Basic first. `client_id` and `client_secret` are encoded with `application/x-www-form-urlencoded` (RFC 6749 Appendix B; a space is `+`) before base64. The body is `grant_type=client_credentials&scope=all`. Form-body credentials are used only when Basic returns HTTP 400 or 401 `invalid_client`, and that failure includes the form attempt's redacted reason. A form-body HTTP 5xx is an upstream unavailable error, not a credential rejection. The token URL must be https before any Basic header is sent. Every non-empty client secret is redacted from token errors; an empty secret is left unchanged.
+
 ## [2.0.1] - 2026-10-09
 
 ### Fixed

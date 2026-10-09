@@ -26,11 +26,11 @@ The package is published to GitHub Packages under the `@wyre-ai` scope:
 
 Acceptatie (confirmed live 2026-10-09) uses **OAuth 2.0 client credentials**, then a Bearer token. Putting `client_id` and `client_secret` in the token form body returns HTTP 400 `Invalid client: client is invalid`. HTTP Basic on the token endpoint returns a Bearer token (`expires_in` 3599). Basic Auth on `/realtime` is still rejected (`403 Auth method Basic not allowed on this endpoint`) and is not a fallback for that call.
 
-1. `POST {KPN_GREXX_TOKEN_URL}` with `Authorization: Basic base64(urlencode(client_id):urlencode(client_secret))` (RFC 6749 §2.3.1) and body `grant_type=client_credentials&scope=all`. If that response is HTTP 400 or 401 `invalid_client`, retry once with the same grant and scope and `client_id` / `client_secret` in the form body, and no `Authorization` header.
+1. `POST {KPN_GREXX_TOKEN_URL}` (https only) with `Authorization: Basic base64(form-urlencoded(client_id):form-urlencoded(client_secret))` (RFC 6749 §2.3.1 / Appendix B; a space is `+`) and body `grant_type=client_credentials&scope=all`. If that response is HTTP 400 or 401 `invalid_client`, retry once with the same grant and scope and `client_id` / `client_secret` in the form body, and no `Authorization` header.
 2. Cache `access_token` until 60 seconds before `expires_in` (acceptatie returns `3599`). Concurrent callers share one mint.
 3. `POST {KPN_GREXX_BASE_URL}/realtime` with `Authorization: Bearer {access_token}` and `Content-Type: text/xml`. The body is plain XML (`ZipCodeCheckRequest_V6`, …), not a SOAP envelope.
 4. On HTTP 401, drop the cached token, mint once more, and retry the XML call once.
-5. If the token endpoint errors, times out, or redirects, the client **fails closed**: it throws `GrexxAuthenticationError` and does not call `/realtime`.
+5. If the token endpoint errors, times out, or redirects, the client **fails closed** and does not call `/realtime`. Both attempts returning HTTP 400 or 401 `invalid_client` throws `GrexxAuthenticationError` and includes the form attempt's reason. A form-body HTTP 5xx throws `GrexxServerError` (the endpoint is unavailable).
 
 Redirects are not followed on either call, so a token or Bearer credential is not sent to another host.
 

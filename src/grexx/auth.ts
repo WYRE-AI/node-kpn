@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
-import { GrexxAuthenticationError, isRedirectError, parseGrexxError } from './errors.js';
+import { assertGrexxHttpsUrl } from './config.js';
+import { GrexxAuthenticationError, GrexxError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 
 /** Re-mint this long before `expires_in` (observed 3599s on acceptatie). */
 export const GREXX_EXPIRY_MARGIN_MS = 60_000;
@@ -11,12 +12,14 @@ const DEFAULT_TOKEN_TIMEOUT_MS = 30_000;
 export const GREXX_TOKEN_SCOPE = 'all';
 
 /**
- * RFC 6749 §2.3.1 / Appendix B encoding for HTTP Basic client credentials.
- * Unreserved characters stay as-is; everything else is percent-encoded, and
- * space is `%20` (not `+`). Applied before base64.
+ * RFC 6749 §2.3.1 / Appendix B (`application/x-www-form-urlencoded`) encoding
+ * for HTTP Basic client credentials. Unreserved characters stay as-is, a space
+ * is `+`, and every other character is percent-encoded. Applied before base64.
  */
 function encodeRfc6749Component(value: string): string {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return encodeURIComponent(value)
+    .replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/%20/g, '+');
 }
 
 /** `Basic base64(encode(client_id) + ":" + encode(client_secret))`. */
@@ -153,13 +156,15 @@ export class GrexxTokenProvider {
       }),
     );
     if (form.ok) return form.token;
-    throw rejectedByBoth(form.error, this.opts.clientSecret);
+    throw formFallbackError(form, this.opts.clientSecret);
   }
 
   private async requestToken(
     authorization: string | undefined,
     params: URLSearchParams,
   ): Promise<{ ok: true; token: GrexxToken } | { ok: false; status: number; body: unknown; error: GrexxAuthenticationError }> {
+    assertGrexxHttpsUrl(this.opts.tokenUrl, 'tokenUrl');
+
     let response: Response;
     try {
       response = await fetch(this.opts.tokenUrl, {
@@ -274,18 +279,46 @@ function isInvalidClient(status: number, body: unknown): boolean {
   return false;
 }
 
-function rejectedByBoth(formError: GrexxAuthenticationError, clientSecret: string): GrexxAuthenticationError {
+function formFallbackError(
+  form: { status: number; body: unknown; error: GrexxAuthenticationError },
+  clientSecret: string,
+): GrexxError {
+  const reason = redactSecretText(form.error.message, clientSecret);
+  const response = redactSecrets(form.body, clientSecret);
+  if (isInvalidClient(form.status, form.body)) {
+    return new GrexxAuthenticationError(
+      `Grexx token endpoint rejected HTTP Basic authentication and form-body client credentials: ${reason}`,
+      form.status,
+      response,
+      form.error.code ?? 'invalid_client',
+      form.error.requestId,
+    );
+  }
+  if (form.status >= 500) {
+    return new GrexxServerError(
+      `Grexx token endpoint is unavailable after the HTTP Basic attempt. The form-body attempt failed: ${reason}`,
+      form.status,
+      response,
+      form.error.code ?? 'token_endpoint_unavailable',
+      form.error.requestId,
+    );
+  }
   return new GrexxAuthenticationError(
-    'Grexx token endpoint rejected HTTP Basic authentication and form-body client credentials. Refusing to call /realtime without a token.',
-    formError.statusCode,
-    redactSecrets(formError.response, clientSecret),
-    formError.code ?? 'invalid_client',
-    formError.requestId,
+    `Grexx token endpoint failed after the HTTP Basic attempt. The form-body attempt failed: ${reason}`,
+    form.status,
+    response,
+    form.error.code,
+    form.error.requestId,
   );
 }
 
+function redactSecretText(value: string, secret: string): string {
+  const redacted = redactSecrets(value, secret);
+  return typeof redacted === 'string' ? redacted : value;
+}
+
 function redactSecrets(value: unknown, secret: string): unknown {
-  if (secret.length < 4) return value;
+  if (secret.length === 0) return value;
   if (typeof value === 'string') return value.split(secret).join('[redacted]');
   if (Array.isArray(value)) return value.map((item) => redactSecrets(item, secret));
   if (value !== null && typeof value === 'object') {
