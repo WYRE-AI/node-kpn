@@ -10,6 +10,21 @@ const DEFAULT_TOKEN_TIMEOUT_MS = 30_000;
 /** Hard-coded acceptatie scope. Not caller-configurable. */
 export const GREXX_TOKEN_SCOPE = 'all';
 
+/**
+ * RFC 6749 §2.3.1 / Appendix B encoding for HTTP Basic client credentials.
+ * Unreserved characters stay as-is; everything else is percent-encoded, and
+ * space is `%20` (not `+`). Applied before base64.
+ */
+function encodeRfc6749Component(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
+/** `Basic base64(encode(client_id) + ":" + encode(client_secret))`. */
+function grexxBasicAuthorization(clientId: string, clientSecret: string): string {
+  const encoded = `${encodeRfc6749Component(clientId)}:${encodeRfc6749Component(clientSecret)}`;
+  return `Basic ${Buffer.from(encoded, 'utf8').toString('base64')}`;
+}
+
 export interface GrexxToken {
   accessToken: string;
   /** Local epoch ms at which the token expires (`expires_in`, no margin applied). */
@@ -71,10 +86,12 @@ export interface GrexxTokenProviderOptions {
 /**
  * Grexx OAuth 2.0 client_credentials.
  *
- * POST {tokenUrl} `application/x-www-form-urlencoded`:
- * `grant_type=client_credentials&client_id&client_secret&scope=all`.
- * No Authorization header is sent. Basic Auth is not a fallback.
- * Network errors, timeouts, redirects, and non-2xx responses throw
+ * Acceptatie rejects `client_id` / `client_secret` in the form body
+ * (`HTTP 400 invalid_client`) and accepts HTTP Basic. The first request is
+ * `Authorization: Basic` (RFC 6749 §2.3.1) with body
+ * `grant_type=client_credentials&scope=all`. Form-body client credentials are
+ * sent only when Basic returns HTTP 400 or 401 `invalid_client`.
+ * Network errors, timeouts, redirects, and other non-2xx responses throw
  * {@link GrexxAuthenticationError} and do not return a token.
  */
 export class GrexxTokenProvider {
@@ -116,13 +133,33 @@ export class GrexxTokenProvider {
   }
 
   private async mint(): Promise<GrexxToken> {
-    const body = new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: this.opts.clientId,
-      client_secret: this.opts.clientSecret,
-      scope: GREXX_TOKEN_SCOPE,
-    });
+    const basic = await this.requestToken(
+      grexxBasicAuthorization(this.opts.clientId, this.opts.clientSecret),
+      new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: GREXX_TOKEN_SCOPE,
+      }),
+    );
+    if (basic.ok) return basic.token;
+    if (!isInvalidClient(basic.status, basic.body)) throw basic.error;
 
+    const form = await this.requestToken(
+      undefined,
+      new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: this.opts.clientId,
+        client_secret: this.opts.clientSecret,
+        scope: GREXX_TOKEN_SCOPE,
+      }),
+    );
+    if (form.ok) return form.token;
+    throw rejectedByBoth(form.error, this.opts.clientSecret);
+  }
+
+  private async requestToken(
+    authorization: string | undefined,
+    params: URLSearchParams,
+  ): Promise<{ ok: true; token: GrexxToken } | { ok: false; status: number; body: unknown; error: GrexxAuthenticationError }> {
     let response: Response;
     try {
       response = await fetch(this.opts.tokenUrl, {
@@ -130,8 +167,9 @@ export class GrexxTokenProvider {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
+          ...(authorization ? { Authorization: authorization } : {}),
         },
-        body: body.toString(),
+        body: params.toString(),
         redirect: 'error',
         signal: AbortSignal.timeout(this.timeoutMs),
       });
@@ -151,13 +189,20 @@ export class GrexxTokenProvider {
 
     const requestId = response.headers.get('x-request-id') ?? undefined;
     if (!response.ok) {
-      throw parseGrexxError(response.status, parsed, response.headers, requestId, { tokenEndpoint: true });
+      const error = parseGrexxError(response.status, redactSecrets(parsed, this.opts.clientSecret), response.headers, requestId, {
+        tokenEndpoint: true,
+      });
+      return { ok: false, status: response.status, body: parsed, error: error as GrexxAuthenticationError };
     }
 
+    return { ok: true, token: this.parseToken(response.status, parsed, requestId) };
+  }
+
+  private parseToken(status: number, parsed: unknown, requestId: string | undefined): GrexxToken {
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new GrexxAuthenticationError(
         'Grexx token endpoint returned a non-JSON body. Refusing to call /realtime without a token.',
-        response.status,
+        status,
         parsed,
         'invalid_token_response',
         requestId,
@@ -170,7 +215,7 @@ export class GrexxTokenProvider {
     if (typeof accessToken !== 'string' || accessToken.length === 0 || /[\r\n]/.test(accessToken)) {
       throw new GrexxAuthenticationError(
         'Grexx token endpoint returned no access_token. Refusing to call /realtime without a token.',
-        response.status,
+        status,
         redacted,
         'invalid_token_response',
         requestId,
@@ -181,7 +226,7 @@ export class GrexxTokenProvider {
     if (tokenType.toLowerCase() !== 'bearer') {
       throw new GrexxAuthenticationError(
         `Grexx token endpoint returned token_type "${tokenType}", expected Bearer. Refusing to call /realtime.`,
-        response.status,
+        status,
         redacted,
         'invalid_token_response',
         requestId,
@@ -198,7 +243,7 @@ export class GrexxTokenProvider {
     if (!Number.isFinite(expiresIn) || expiresIn <= 0) {
       throw new GrexxAuthenticationError(
         'Grexx token endpoint returned no expires_in. Refusing to call /realtime without a token.',
-        response.status,
+        status,
         redacted,
         'invalid_token_response',
         requestId,
@@ -213,6 +258,44 @@ export class GrexxTokenProvider {
     this.cache.set(this.key, token);
     return token;
   }
+}
+
+/** HTTP 400/401 whose OAuth error is `invalid_client` (JSON or the acceptatie text). */
+function isInvalidClient(status: number, body: unknown): boolean {
+  if (status !== 400 && status !== 401) return false;
+  if (typeof body === 'string') return /invalid[_ -]?client/i.test(body);
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) return false;
+  const record = body as Record<string, unknown>;
+  const error = record['error'];
+  const description = record['error_description'];
+  if (error === 'invalid_client') return true;
+  if (typeof error === 'string' && /invalid[_ -]?client/i.test(error)) return true;
+  if (typeof description === 'string' && /invalid[_ -]?client/i.test(description)) return true;
+  return false;
+}
+
+function rejectedByBoth(formError: GrexxAuthenticationError, clientSecret: string): GrexxAuthenticationError {
+  return new GrexxAuthenticationError(
+    'Grexx token endpoint rejected HTTP Basic authentication and form-body client credentials. Refusing to call /realtime without a token.',
+    formError.statusCode,
+    redactSecrets(formError.response, clientSecret),
+    formError.code ?? 'invalid_client',
+    formError.requestId,
+  );
+}
+
+function redactSecrets(value: unknown, secret: string): unknown {
+  if (secret.length < 4) return value;
+  if (typeof value === 'string') return value.split(secret).join('[redacted]');
+  if (Array.isArray(value)) return value.map((item) => redactSecrets(item, secret));
+  if (value !== null && typeof value === 'object') {
+    const redacted: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      redacted[key] = redactSecrets(item, secret);
+    }
+    return redacted;
+  }
+  return value;
 }
 
 function redactTokenResponse(record: Record<string, unknown>): Record<string, unknown> {

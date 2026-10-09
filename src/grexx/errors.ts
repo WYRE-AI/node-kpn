@@ -3,7 +3,8 @@
  *
  * Token-endpoint failures are always {@link GrexxAuthenticationError} and must
  * not be retried into `/realtime` — the client fails closed without a Bearer token.
- * There is no Basic Auth path.
+ * The token request uses HTTP Basic, then form-body credentials only after
+ * `invalid_client`. `/realtime` itself is Bearer only.
  */
 export class GrexxError extends Error {
   readonly statusCode: number;

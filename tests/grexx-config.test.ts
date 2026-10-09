@@ -55,8 +55,11 @@ describe('Grexx env and gateway headers', () => {
       isRoomNumberKnown: false,
     });
     const token = calls.find((call) => call.url === TOKEN_URL)!;
-    expect(new URLSearchParams(token.body).get('client_id')).toBe('header-user');
-    expect(new URLSearchParams(token.body).get('client_secret')).toBe('header-secret');
+    const raw = Buffer.from(token.headers.get('authorization')!.slice('Basic '.length), 'base64').toString('utf8');
+    const colon = raw.indexOf(':');
+    expect(decodeURIComponent(raw.slice(0, colon))).toBe('header-user');
+    expect(decodeURIComponent(raw.slice(colon + 1))).toBe('header-secret');
+    expect(new URLSearchParams(token.body).get('client_secret')).toBeNull();
     expect(calls.find((call) => call.url === REALTIME_URL)?.url).toBe(REALTIME_URL);
   });
 

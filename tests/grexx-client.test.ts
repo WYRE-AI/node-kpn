@@ -108,7 +108,7 @@ describe('GrexxClient /realtime', () => {
     expect((err as GrexxAuthenticationError).message).toContain('Refusing to call /realtime');
     expect((err as GrexxAuthenticationError).message).not.toContain('test-secret');
     expect(realtimeCalls(calls)).toHaveLength(0);
-    expect(tokenCalls(calls)).toHaveLength(1);
+    expect(tokenCalls(calls)).toHaveLength(2);
   });
 
   it('does not call /realtime when the token endpoint times out', async () => {
@@ -146,7 +146,7 @@ describe('GrexxClient /realtime', () => {
     expect(err).toBeInstanceOf(GrexxAuthenticationError);
     expect(realtimeCalls(calls)).toHaveLength(1);
     expect(tokenCalls(calls)).toHaveLength(2);
-    expect(calls.some((call) => call.headers.get('authorization')?.startsWith('Basic'))).toBe(false);
+    expect(realtimeCalls(calls).some((call) => call.headers.get('authorization')?.startsWith('Basic'))).toBe(false);
   });
 
   it('throws ValidationError for a business code and does not retry it', async () => {
@@ -187,7 +187,7 @@ describe('GrexxClient /realtime', () => {
     expect(err).toBeInstanceOf(GrexxForbiddenError);
     expect((err as GrexxForbiddenError).requestId).toBe('deny-1');
     expect((err as GrexxForbiddenError).message).toContain('Auth method Basic not allowed');
-    expect(calls.every((call) => !String(call.headers.get('authorization')).startsWith('Basic'))).toBe(true);
+    expect(realtimeCalls(calls).every((call) => !String(call.headers.get('authorization')).startsWith('Basic'))).toBe(true);
   });
 
   it('retries HTTP 502 for zipCodeCheck and not for postRealtime by default', async () => {
