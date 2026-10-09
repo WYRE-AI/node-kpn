@@ -12,6 +12,22 @@ import {
 import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 import { SlidingWindowRateLimiter } from './rate-limit.js';
 import { readGrexxStatus, isGrexxSuccessCode } from './status.js';
+import {
+  ORDER_DATA_REQUEST_ELEMENT,
+  ORDER_DATA_RESPONSE_ELEMENT,
+  buildOrderDataRequest,
+  parseOrderDataResponse,
+  type OrderDataInput,
+  type OrderDataResult,
+} from './order-data.js';
+import {
+  PREQUALIFICATION_REQUEST_ELEMENT,
+  PREQUALIFICATION_RESPONSE_ELEMENT,
+  buildPrequalificationRequest,
+  parsePrequalificationResponse,
+  type PrequalificationInput,
+  type PrequalificationResult,
+} from './prequalification.js';
 import { parseXml, renderRealtimeBody, type XmlObject, type XmlValue } from './xml.js';
 import {
   ZIP_CODE_CHECK_REQUEST_ELEMENT,
@@ -42,7 +58,8 @@ export interface PostRealtimeOptions {
    * Retry network errors, HTTP 429 / code 108, and 5xx.
    * Default false: `postRealtime` carries any IRMA root, including writes.
    * A timeout can happen after Grexx has accepted the request, so a retry
-   * would submit it twice. Reads such as {@link GrexxClient.zipCodeCheck} opt in.
+   * would submit it twice. Reads such as {@link GrexxClient.zipCodeCheck},
+   * {@link GrexxClient.prequalification}, and {@link GrexxClient.orderData} opt in.
    * A 401 still remints once for every call: the request was rejected.
    * Token mint failures are never retried into a Bearer-less call.
    */
@@ -218,6 +235,46 @@ export class GrexxClient {
       );
     }
     return parseZipCodeCheckResponse(result);
+  }
+
+  /**
+   * `PrequalificationRequest_V2` → parsed `PrequalificationResponse_V1`.
+   * `ErrorClass` and `ErrorMessage` are returned on the result.
+   */
+  async prequalification(input: PrequalificationInput): Promise<PrequalificationResult> {
+    const xml = buildPrequalificationRequest(input);
+    const result = await this.postRealtime(PREQUALIFICATION_REQUEST_ELEMENT, xml, { idempotent: true });
+    if (result.rootElement !== PREQUALIFICATION_RESPONSE_ELEMENT) {
+      throw new GrexxError(
+        `Expected ${PREQUALIFICATION_RESPONSE_ELEMENT} but received <${result.rootElement}>`,
+        result.httpStatus,
+        result.rawXml,
+        result.code,
+        result.requestId,
+      );
+    }
+    return parsePrequalificationResponse(result);
+  }
+
+  /**
+   * `OrderDataRequest_V1` → parsed `OrderDataResponse_V1`.
+   * `Status/Code` other than a success code throws, matching `postRealtime`
+   * (`ValidationError`, `UnknownError`). Use {@link parseOrderDataResponse}
+   * to read those documents without that mapping.
+   */
+  async orderData(input: OrderDataInput): Promise<OrderDataResult> {
+    const xml = buildOrderDataRequest(input);
+    const result = await this.postRealtime(ORDER_DATA_REQUEST_ELEMENT, xml, { idempotent: true });
+    if (result.rootElement !== ORDER_DATA_RESPONSE_ELEMENT) {
+      throw new GrexxError(
+        `Expected ${ORDER_DATA_RESPONSE_ELEMENT} but received <${result.rootElement}>`,
+        result.httpStatus,
+        result.rawXml,
+        result.code,
+        result.requestId,
+      );
+    }
+    return parseOrderDataResponse(result);
   }
 }
 
