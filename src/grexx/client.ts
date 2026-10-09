@@ -63,8 +63,9 @@ interface NormalizedBody {
  *
  * Mints an OAuth 2.0 client_credentials token and POSTs plain XML (no SOAP)
  * to `{baseUrl}/realtime` with `Authorization: Bearer` and `Content-Type: text/xml`.
- * Basic Auth is not sent. Base URL and token URL come from configuration, never
- * from caller headers — use {@link GrexxClient.fromEnv} for gateway credentials.
+ * The token request uses HTTP Basic. `/realtime` does not. Base URL and token URL
+ * come from configuration, never from caller headers — use
+ * {@link GrexxClient.fromEnv} for gateway credentials.
  */
 export class GrexxClient {
   private readonly auth: GrexxTokenProvider;
