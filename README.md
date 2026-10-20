@@ -40,7 +40,7 @@ Redirects are not followed on either call, so a token or Bearer credential is no
 |---|---|---|
 | `KPN_GREXX_USERNAME` | yes | OAuth `client_id` (API username from the Grexx portal, API Gegevens) |
 | `KPN_GREXX_PASSWORD` | yes | OAuth `client_secret` (API password) |
-| `KPN_GREXX_BASE_URL` | yes | Interface root, **without** `/realtime`. No default — acceptatie and production differ. |
+| `KPN_GREXX_BASE_URL` | yes, unless the request sends `X-Grexx-Api-Url` + `X-Grexx-Token-Url` | Interface root, **without** `/realtime`. No default — acceptatie and production differ. |
 | `KPN_GREXX_TOKEN_URL` | no | Token endpoint. Default: `https://service-accept.grexx.today/oauth/access_token` |
 
 `KPN_GREXX_BASE_URL` is the interface root copied from API Gegevens, for example `https://service-accept.grexx.today/interfaces/kpn/kpn_partners_acceptatieomgeving/<interface-id>/`.
@@ -58,7 +58,7 @@ A gateway can point one connection at another Grexx environment (for example pro
 
 Rules, enforced by `resolveGrexxConfig` / `GrexxClient.fromEnv` (each failure is a `GrexxConfigError` whose message never echoes the URL):
 
-- **Both or neither.** Both absent or empty means the environment URLs, `KPN_GREXX_BASE_URL` and `KPN_GREXX_TOKEN_URL` (today the acceptatie environment). Exactly one is an error, so a production API is never paired with the acceptatie token host.
+- **Both or neither.** When both are absent or empty, the client uses `KPN_GREXX_BASE_URL` and `KPN_GREXX_TOKEN_URL`. `KPN_GREXX_BASE_URL` has no default and is then required; `KPN_GREXX_TOKEN_URL` is optional and defaults to the acceptatie token endpoint (`https://service-accept.grexx.today/oauth/access_token`). This also holds when the credential headers are sent without the URL headers. Exactly one is an error, so a production API is never paired with the acceptatie token host.
 - Honoured only together with `X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`, so the environment secret is never sent to a header URL.
 - **Scheme and authority:** `https:` only, port 443 only, no userinfo (`user:pass@`), no query string, no fragment.
 - **Exact-host allowlist** `GREXX_ALLOWED_HOSTS`: `service.grexx.today` (production) and `service-accept.grexx.today` (acceptatie). No wildcard: other customers' portals live on `*.grexx.today`. IP literals never match. Append to the constant to allow another host.
@@ -66,7 +66,7 @@ Rules, enforced by `resolveGrexxConfig` / `GrexxClient.fromEnv` (each failure is
 - **Private-IP blocking (SSRF guard).** Header URLs set `ssrfGuard: true`. Before every token mint and every `/realtime` post the host is resolved, and the call fails closed if any address is private, loopback, link-local (including `169.254.169.254`), CGNAT, multicast, reserved or benchmark (`198.18.0.0/15`), the Azure wireserver, IPv6 ULA (including `fd00:ec2::254`), or an IPv4-in-IPv6 form of those. The request then goes through undici's own `fetch` with an `Agent` whose socket `lookup` repeats the check, so a DNS answer that changes between the check and the connect (rebinding) still cannot reach an internal address. DNS failures carry the resolver error as `cause`; the message does not name the host.
 - **Redirects are refused** (`redirect: 'error'`): any 3xx fails the call.
 
-Environment URLs (no headers) are operator-set and keep using the global `fetch` without the DNS guard.
+When neither URL header is sent (with or without the credential headers), the URLs come from `KPN_GREXX_BASE_URL` / `KPN_GREXX_TOKEN_URL`. Those are operator-set, so that path keeps using the global `fetch` without the DNS guard.
 
 Every other URL header name (`X-KPN-Grexx-Base-Url`, `X-KPN-Grexx-Token-Url`, older `X-KPN-*` forms) still throws `GrexxConfigError`.
 
