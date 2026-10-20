@@ -7,8 +7,12 @@ import {
   GrexxTokenCache,
   assertGrexxAllowedUrl,
   assertGrexxHostResolvesPublic,
+  GrexxAuthenticationError,
+  guardGrexxRequest,
   guardedConnectLookup,
+  guardedGrexxFetch,
   isBlockedGrexxAddress,
+  type GrexxFetch,
   resolveGrexxConfig,
   type GrexxLookup,
 } from '../src/index.js';
@@ -123,11 +127,14 @@ describe('assertGrexxHostResolvesPublic (mocked resolver)', () => {
     await expect(assertGrexxHostResolvesPublic('service.grexx.today', 'api', lookupTo())).rejects.toThrow(
       /could not be resolved/,
     );
-    await expect(
-      assertGrexxHostResolvesPublic('service.grexx.today', 'api', async () => {
-        throw new Error('ENOTFOUND');
-      }),
-    ).rejects.toThrow(/could not be resolved/);
+    const dnsError = Object.assign(new Error('getaddrinfo ENOTFOUND service.grexx.today'), { code: 'ENOTFOUND' });
+    const failed = await assertGrexxHostResolvesPublic('service.grexx.today', 'api', async () => {
+      throw dnsError;
+    }).catch((e: unknown) => e);
+    expect(failed).toBeInstanceOf(GrexxConfigError);
+    expect((failed as Error).message).toBe('api host could not be resolved.');
+    expect((failed as Error).message).not.toContain('service.grexx.today');
+    expect((failed as Error).cause).toBe(dnsError);
   });
 
   it('re-checks at socket connect time (rebinding)', async () => {
@@ -213,13 +220,22 @@ describe('resolveGrexxConfig with X-Grexx-Api-Url / X-Grexx-Token-Url', () => {
 });
 
 describe('GrexxClient with per-connection URLs', () => {
+  const dispatchers: unknown[] = [];
+  // Test seam: the guarded path hands each request (with its dispatcher) here,
+  // and we forward to the stubbed global fetch so installFetch records it.
+  const seam: GrexxFetch = (url, init) => {
+    dispatchers.push(init.dispatcher);
+    const { dispatcher: _d, ...rest } = init;
+    return globalThis.fetch(url, rest);
+  };
   function client(lookup: GrexxLookup) {
     const config = resolveGrexxConfig({
       env: ENV,
       headers: { ...CREDS, 'X-Grexx-Api-Url': PROD_API, 'X-Grexx-Token-Url': PROD_TOKEN },
       lookup,
     });
-    return new GrexxClient({ ...config, tokenCache: new GrexxTokenCache(), maxRetries: 0 });
+    dispatchers.length = 0;
+    return new GrexxClient({ ...config, guardedFetch: seam, tokenCache: new GrexxTokenCache(), maxRetries: 0 });
   }
 
   it('mints at the header token URL and posts to the header API URL with redirects refused', async () => {
@@ -227,6 +243,9 @@ describe('GrexxClient with per-connection URLs', () => {
     await client(publicLookup).zipCodeCheck(ZIP);
     expect(calls.map((c) => c.url)).toEqual([PROD_TOKEN, `${PROD_API}/realtime`]);
     expect(calls.every((c) => c.redirect === 'error')).toBe(true);
+    // Both requests went through guard.fetch with the guarded undici dispatcher.
+    expect(dispatchers).toHaveLength(2);
+    expect(dispatchers.every((d) => d !== undefined && d === dispatchers[0])).toBe(true);
   });
 
   it('sends nothing when the token host resolves internal', async () => {
@@ -256,7 +275,7 @@ describe('GrexxClient with per-connection URLs', () => {
     ).toThrow(/tokenUrl host is not an allowed Grexx host/);
   });
 
-  it('leaves environment URLs unguarded (operator-set, box smoke unaffected)', async () => {
+  it('leaves environment URLs on global fetch, unguarded (operator-set, box smoke unaffected)', async () => {
     let lookups = 0;
     const counting: GrexxLookup = async () => {
       lookups += 1;
@@ -264,8 +283,72 @@ describe('GrexxClient with per-connection URLs', () => {
     };
     const calls = installFetch((call) => (call.url.endsWith('/oauth/access_token') ? jsonResponse(TOKEN_BODY) : xmlResponse(SUCCESS_XML)));
     const config = resolveGrexxConfig({ env: ENV, headers: CREDS, lookup: counting });
-    await new GrexxClient({ ...config, tokenCache: new GrexxTokenCache() }).zipCodeCheck(ZIP);
+    let seamCalls = 0;
+    const unusedSeam: GrexxFetch = async () => {
+      seamCalls += 1;
+      throw new Error('guarded fetch must not be used for env URLs');
+    };
+    await new GrexxClient({ ...config, guardedFetch: unusedSeam, tokenCache: new GrexxTokenCache() }).zipCodeCheck(ZIP);
     expect(lookups).toBe(0);
+    expect(seamCalls).toBe(0);
     expect(calls).toHaveLength(2);
+  });
+});
+
+/**
+ * UNMOCKED: real undici fetch + real guarded Agent, no fetch stub. Only DNS is
+ * injected, so no packet leaves the box: the blocked lookup fails the socket
+ * before any connect.
+ */
+describe('guarded undici fetch (unmocked)', () => {
+  const causeCodes = (err: unknown): string[] => {
+    const codes: string[] = [];
+    let cur: unknown = err;
+    for (let i = 0; i < 6 && cur instanceof Error; i += 1) {
+      const code = (cur as NodeJS.ErrnoException).code;
+      if (code) codes.push(code);
+      cur = (cur as Error & { cause?: unknown }).cause;
+    }
+    return codes;
+  };
+
+  it('rejects promptly when the host resolves to loopback', async () => {
+    const started = Date.now();
+    const err = await guardedGrexxFetch(lookupTo('127.0.0.1'))(PROD_TOKEN, { method: 'POST', redirect: 'error' }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(Error);
+    expect(causeCodes(err)).toContain('EGREXXBLOCKED');
+    expect(Date.now() - started).toBeLessThan(2_000);
+  });
+
+  it('rejects promptly when the host resolves to a private address', async () => {
+    const err = await guardedGrexxFetch(lookupTo('10.0.0.8'))(PROD_TOKEN, { method: 'POST' }).catch((e: unknown) => e);
+    expect(causeCodes(err)).toContain('EGREXXBLOCKED');
+  });
+
+  it('guard.fetch from guardGrexxRequest blocks a rebind between pre-check and connect', async () => {
+    let n = 0;
+    const rebinding: GrexxLookup = async () => [{ address: n++ === 0 ? '203.0.114.10' : '127.0.0.1', family: 4 }];
+    const guard = await guardGrexxRequest(PROD_TOKEN, 'tokenUrl', 'token', { lookup: rebinding });
+    const err = await guard.fetch(PROD_TOKEN, { method: 'POST', redirect: 'error' }).catch((e: unknown) => e);
+    expect(causeCodes(err)).toContain('EGREXXBLOCKED');
+  });
+
+  it('GrexxClient (no seam, no stub) refuses to mint when the token host rebinds to loopback at connect', async () => {
+    let n = 0;
+    const rebinding: GrexxLookup = async () => [{ address: n++ === 0 ? '203.0.114.10' : '127.0.0.1', family: 4 }];
+    const config = resolveGrexxConfig({
+      env: ENV,
+      headers: { ...CREDS, 'X-Grexx-Api-Url': PROD_API, 'X-Grexx-Token-Url': PROD_TOKEN },
+      lookup: rebinding,
+    });
+    const started = Date.now();
+    const err = await new GrexxClient({ ...config, tokenCache: new GrexxTokenCache(), maxRetries: 0 })
+      .zipCodeCheck(ZIP)
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect(causeCodes(err)).toContain('EGREXXBLOCKED');
+    expect(Date.now() - started).toBeLessThan(2_000);
   });
 });

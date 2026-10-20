@@ -2,6 +2,13 @@
 
 ### Added
 
+- Per-connection Grexx URLs (WYREAI-525, planned for v2.2.0): `X-Grexx-Api-Url` and `X-Grexx-Token-Url`, both or neither, honoured only with the credential headers. Absent: `KPN_GREXX_BASE_URL` / `KPN_GREXX_TOKEN_URL` as before. Each URL must be https on port 443 with no userinfo, query or fragment, have a host exactly in `GREXX_ALLOWED_HOSTS` (`service.grexx.today`, `service-accept.grexx.today`), and match its path rule (token exactly `/oauth/access_token`; API under `/interfaces/kpn/`). Header URLs turn on `ssrfGuard`: DNS is checked before every request and again at socket connect, and private, loopback, link-local, metadata and reserved addresses are refused. Redirects stay refused.
+- `GrexxConfigError` accepts `ErrorOptions` (`cause`).
+
+### Dependencies
+
+- New runtime dependency: `undici` `^6`. The guarded path uses undici's own `fetch` with a DNS-guarded `Agent`. The unguarded (environment URL) path still uses the global `fetch`.
+
 - `buildPrequalificationRequest` / `GrexxClient.prequalification` for `PrequalificationRequest_V2` → `PrequalificationResponse_V1`. PREP can be tested with ZipCode `9999ZZ` and HouseNr `1`. `HasBroadband` true requires `ServiceId` or `ReferencePhoneNumber`. `OrderId`, when set, must match `OID` plus digits. `ErrorClass` and `ErrorMessage` are returned on the result.
 - `buildOrderDataRequest` / `GrexxClient.orderData` for `OrderDataRequest_V1` → `OrderDataResponse_V1` (`Status` `Success` | `UnknownError` | `ValidationError`, optional `Order`). `parseOrderDataResponse` returns validation and unknown-error statuses as data. `orderData` still throws those codes through the existing realtime error mapping. Both reads opt in to the realtime retry policy.
 

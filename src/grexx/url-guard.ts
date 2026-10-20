@@ -1,7 +1,7 @@
 import dns from 'node:dns';
 import net from 'node:net';
 
-import { Agent } from 'undici';
+import { Agent, fetch as undiciFetch } from 'undici';
 
 import { GrexxConfigError } from './errors.js';
 
@@ -190,8 +190,9 @@ export async function assertGrexxHostResolvesPublic(
   let addresses: GrexxLookupAddress[];
   try {
     addresses = await lookup(hostname);
-  } catch {
-    throw new GrexxConfigError(`${label} host could not be resolved.`);
+  } catch (err) {
+    // The resolver error goes on `cause`; the message never names the host.
+    throw new GrexxConfigError(`${label} host could not be resolved.`, { cause: err });
   }
   if (addresses.length === 0) throw new GrexxConfigError(`${label} host could not be resolved.`);
   if (addresses.some((a) => isBlockedGrexxAddress(a.address))) {
@@ -244,24 +245,58 @@ function stripRealtime(endpoint: string): string {
   return endpoint.replace(/\/realtime$/, '');
 }
 
+/** Fetch signature used on the guarded path. */
+export type GrexxFetch = (url: string, init: RequestInit & { dispatcher?: Agent }) => Promise<Response>;
+
+/**
+ * undici's own `fetch`. Node's global `fetch` is a bundled undici whose version
+ * need not match the `Agent` from the `undici` package, so the guarded
+ * dispatcher is only ever handed to the fetch from the same package.
+ */
+export const undiciGrexxFetch: GrexxFetch = (url, init) =>
+  undiciFetch(url, init as Parameters<typeof undiciFetch>[1]) as unknown as Promise<Response>;
+
+/** Fetch bound to the guarded dispatcher: every socket passes the connect-time DNS check. */
+export function guardedGrexxFetch(
+  lookup: GrexxLookup = defaultGrexxLookup,
+  baseFetch: GrexxFetch = undiciGrexxFetch,
+): GrexxFetch {
+  const dispatcher = guardedGrexxDispatcher(lookup);
+  return (url, init) => baseFetch(url, { ...init, dispatcher });
+}
+
 export interface GrexxUrlGuardOptions {
   /** DNS override for tests. */
   lookup?: GrexxLookup;
+  /**
+   * @internal Test seam. Receives the request with the guarded `dispatcher` in
+   * its init. Defaults to undici's own `fetch` ({@link undiciGrexxFetch}).
+   */
+  fetch?: GrexxFetch;
+}
+
+export interface GrexxRequestGuard {
+  /** The guarded dispatcher (connect-time DNS recheck). */
+  dispatcher: Agent;
+  /** Fetch to use for this request: undici `fetch` bound to {@link dispatcher}. */
+  fetch: GrexxFetch;
 }
 
 /**
  * Full check before a request to a caller-supplied URL: the sync rules, then
- * DNS. Returns the fetch init additions (the guarded dispatcher).
+ * DNS. Returns the fetch to use (undici `fetch` with the guarded dispatcher).
  */
 export async function guardGrexxRequest(
   value: string,
   label: string,
   kind: GrexxUrlKind | 'realtime',
   options: GrexxUrlGuardOptions = {},
-): Promise<{ dispatcher: Agent }> {
+): Promise<GrexxRequestGuard> {
   const url =
     kind === 'realtime' ? assertGrexxAllowedUrl(stripRealtime(value), label, 'api') : assertGrexxAllowedUrl(value, label, kind);
   const lookup = options.lookup ?? defaultGrexxLookup;
   await assertGrexxHostResolvesPublic(url.hostname, label, lookup);
-  return { dispatcher: guardedGrexxDispatcher(lookup) };
+  const dispatcher = guardedGrexxDispatcher(lookup);
+  const baseFetch = options.fetch ?? undiciGrexxFetch;
+  return { dispatcher, fetch: (url, init) => baseFetch(url, { ...init, dispatcher }) };
 }

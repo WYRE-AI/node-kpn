@@ -4,7 +4,7 @@ Node.js client for KPN IRMA APIs hosted by Grexx (acceptatie: `service-accept.gr
 
 The previous [developer.kpn.com](https://developer.kpn.com/) client (Disturbance Check, Internet Speed Check, SIM Swap, Mobile Services Management) is still published from `@wyre-ai/node-kpn/legacy`.
 
-- Zero runtime dependencies — native `fetch` and `node:crypto` (Node 20+).
+- One runtime dependency: [`undici`](https://github.com/nodejs/undici) (`^6`), used only for per-connection URLs (its own `fetch` with a DNS-guarded `Agent`). Everything else is native `fetch` and `node:crypto` (Node 20+).
 - Dual ESM + CJS build with TypeScript types.
 - OAuth client-credentials (`scope=all`) with a process-wide token cache. The token request uses HTTP Basic. `/realtime` uses the Bearer token only.
 - Sliding-window rate limiting (at most 25 requests in any 5 s) and typed errors, including IRMA code `108` (Too Many Requests).
@@ -49,14 +49,24 @@ Gateway mode may pass the username and password on `X-KPN-Grexx-Username` and `X
 
 ### Per-connection URLs (`X-Grexx-Api-Url` / `X-Grexx-Token-Url`)
 
-A gateway can point one connection at another Grexx environment (for example production) with `X-Grexx-Api-Url` (interface root, without `/realtime`) and `X-Grexx-Token-Url`. Rules, enforced by `resolveGrexxConfig` / `GrexxClient.fromEnv`:
+A gateway can point one connection at another Grexx environment (for example production) by sending two headers on every call:
 
-- Both or neither. Both absent or empty means `KPN_GREXX_BASE_URL` / `KPN_GREXX_TOKEN_URL`. Exactly one is a `GrexxConfigError`, so a production API is never paired with the acceptatie token host.
-- Honoured only together with `X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`; the env secret is never sent to a header URL.
-- `https:`, no userinfo, no query or fragment, port 443 only.
-- Host exactly one of `GREXX_ALLOWED_HOSTS` (`service.grexx.today`, `service-accept.grexx.today`). No wildcard: other customers' portals live on `*.grexx.today`. Append to the constant to allow another host.
-- Token URL path exactly `/oauth/access_token`; API URL path under `/interfaces/kpn/`.
-- SSRF guard (`ssrfGuard: true`, set automatically for header URLs): before every token mint and `/realtime` post the host is resolved, and the call fails closed if any address is private, loopback, link-local, CGNAT, multicast, reserved/benchmark, ULA, cloud metadata, or an IPv4-in-IPv6 form of those. The same check runs again in the socket `lookup` (undici dispatcher), so DNS rebinding between check and connect cannot reach an internal address. Redirects are refused (`redirect: 'error'`).
+| Header | Value | Example |
+|---|---|---|
+| `X-Grexx-Api-Url` | Interface root from the portal (API Gegevens), **without** `/realtime` | `https://service.grexx.today/interfaces/kpn/<interface-name>/<interface-id>` |
+| `X-Grexx-Token-Url` | OAuth token endpoint | `https://service.grexx.today/oauth/access_token` |
+
+Rules, enforced by `resolveGrexxConfig` / `GrexxClient.fromEnv` (each failure is a `GrexxConfigError` whose message never echoes the URL):
+
+- **Both or neither.** Both absent or empty means the environment URLs, `KPN_GREXX_BASE_URL` and `KPN_GREXX_TOKEN_URL` (today the acceptatie environment). Exactly one is an error, so a production API is never paired with the acceptatie token host.
+- Honoured only together with `X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`, so the environment secret is never sent to a header URL.
+- **Scheme and authority:** `https:` only, port 443 only, no userinfo (`user:pass@`), no query string, no fragment.
+- **Exact-host allowlist** `GREXX_ALLOWED_HOSTS`: `service.grexx.today` (production) and `service-accept.grexx.today` (acceptatie). No wildcard: other customers' portals live on `*.grexx.today`. IP literals never match. Append to the constant to allow another host.
+- **Paths:** the token URL path must be exactly `/oauth/access_token` (`GREXX_TOKEN_PATH`). The API URL path must start with `/interfaces/kpn/` (`GREXX_API_PATH_PREFIX`) and is the interface root without `/realtime`; the client appends `/realtime`. Encoded separators (`%2e`, `%2f`, `%5c`), backslashes and empty segments are rejected.
+- **Private-IP blocking (SSRF guard).** Header URLs set `ssrfGuard: true`. Before every token mint and every `/realtime` post the host is resolved, and the call fails closed if any address is private, loopback, link-local (including `169.254.169.254`), CGNAT, multicast, reserved or benchmark (`198.18.0.0/15`), the Azure wireserver, IPv6 ULA (including `fd00:ec2::254`), or an IPv4-in-IPv6 form of those. The request then goes through undici's own `fetch` with an `Agent` whose socket `lookup` repeats the check, so a DNS answer that changes between the check and the connect (rebinding) still cannot reach an internal address. DNS failures carry the resolver error as `cause`; the message does not name the host.
+- **Redirects are refused** (`redirect: 'error'`): any 3xx fails the call.
+
+Environment URLs (no headers) are operator-set and keep using the global `fetch` without the DNS guard.
 
 Every other URL header name (`X-KPN-Grexx-Base-Url`, `X-KPN-Grexx-Token-Url`, older `X-KPN-*` forms) still throws `GrexxConfigError`.
 

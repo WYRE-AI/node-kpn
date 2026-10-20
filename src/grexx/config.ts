@@ -4,6 +4,7 @@ import {
   GREXX_API_URL_HEADER,
   GREXX_TOKEN_URL_HEADER,
   assertGrexxAllowedUrl,
+  type GrexxFetch,
   type GrexxLookup,
 } from './url-guard.js';
 
@@ -54,6 +55,11 @@ export interface GrexxConfig {
   ssrfGuard?: boolean;
   /** @internal DNS override for the SSRF guard (tests). */
   lookup?: GrexxLookup;
+  /**
+   * @internal Guarded-path fetch seam (tests). Receives each request with the
+   * guarded `dispatcher` in its init. Default: undici's own `fetch`.
+   */
+  guardedFetch?: GrexxFetch;
   /** Token cache override. Defaults to the process-wide cache. */
   tokenCache?: GrexxTokenCache;
   /**
