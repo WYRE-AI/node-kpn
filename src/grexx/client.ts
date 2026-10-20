@@ -11,6 +11,7 @@ import {
 } from './config.js';
 import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 import { SlidingWindowRateLimiter } from './rate-limit.js';
+import { assertGrexxAllowedUrl, guardGrexxRequest, type GrexxFetch, type GrexxLookup } from './url-guard.js';
 import { readGrexxStatus, isGrexxSuccessCode } from './status.js';
 import {
   ORDER_DATA_REQUEST_ELEMENT,
@@ -90,6 +91,9 @@ export class GrexxClient {
   private readonly rateLimiter: SlidingWindowRateLimiter;
   private readonly maxRetries: number;
   private readonly requestTimeoutMs: number;
+  private readonly ssrfGuard: boolean;
+  private readonly lookup: GrexxLookup | undefined;
+  private readonly guardedFetch: GrexxFetch | undefined;
 
   constructor(config: GrexxConfig) {
     const username = requireCredential(config.username, 'username');
@@ -99,6 +103,13 @@ export class GrexxClient {
       'tokenUrl',
     );
     this.endpoint = grexxRealtimeUrl(config.baseUrl);
+    this.ssrfGuard = config.ssrfGuard === true;
+    this.lookup = config.lookup;
+    this.guardedFetch = config.guardedFetch;
+    if (this.ssrfGuard) {
+      assertGrexxAllowedUrl(config.baseUrl, 'baseUrl', 'api');
+      assertGrexxAllowedUrl(tokenUrl.href, 'tokenUrl', 'token');
+    }
     this.auth = new GrexxTokenProvider({
       tokenUrl: tokenUrl.href,
       clientId: username,
@@ -106,6 +117,9 @@ export class GrexxClient {
       ...(config.tokenCache ? { cache: config.tokenCache } : {}),
       ...(config.tokenTimeoutMs !== undefined ? { timeoutMs: config.tokenTimeoutMs } : {}),
       ...(config.now ? { now: config.now } : {}),
+      ...(this.ssrfGuard ? { ssrfGuard: true } : {}),
+      ...(config.lookup ? { lookup: config.lookup } : {}),
+      ...(config.guardedFetch ? { guardedFetch: config.guardedFetch } : {}),
     });
     this.rateLimiter = rateLimiterForAccount(this.endpoint, username);
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
@@ -142,10 +156,20 @@ export class GrexxClient {
     for (;;) {
       const authorization = await this.auth.authorizationHeader();
       await this.rateLimiter.acquire();
+      // Re-checked per attempt: the guard fails closed and is never retried.
+      // Guarded: undici fetch + guarded dispatcher. Unguarded (env URLs): global fetch.
+      const doFetch: GrexxFetch = this.ssrfGuard
+        ? (
+            await guardGrexxRequest(this.endpoint, 'baseUrl', 'realtime', {
+              ...(this.lookup ? { lookup: this.lookup } : {}),
+              ...(this.guardedFetch ? { fetch: this.guardedFetch } : {}),
+            })
+          ).fetch
+        : (url, init) => fetch(url, init);
 
       let response: Response;
       try {
-        response = await fetch(this.endpoint, {
+        response = await doFetch(this.endpoint, {
           method: 'POST',
           headers: {
             Accept: 'text/xml, application/xml, application/json',

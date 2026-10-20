@@ -72,5 +72,8 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "undici": "^6.29.1"
   }
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { assertGrexxHttpsUrl } from './config.js';
+import { guardGrexxRequest, type GrexxFetch, type GrexxLookup } from './url-guard.js';
 import { GrexxAuthenticationError, GrexxError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 
 /** Re-mint this long before `expires_in` (observed 3599s on acceptatie). */
@@ -84,6 +85,12 @@ export interface GrexxTokenProviderOptions {
   timeoutMs?: number;
   /** Clock override for tests. Defaults to `Date.now`. */
   now?: () => number;
+  /** Allowlist + DNS SSRF guard on `tokenUrl` before every mint. */
+  ssrfGuard?: boolean;
+  /** @internal DNS override for the SSRF guard. */
+  lookup?: GrexxLookup;
+  /** @internal Guarded-path fetch seam (tests). Default: undici `fetch`. */
+  guardedFetch?: GrexxFetch;
 }
 
 /**
@@ -164,10 +171,19 @@ export class GrexxTokenProvider {
     params: URLSearchParams,
   ): Promise<{ ok: true; token: GrexxToken } | { ok: false; status: number; body: unknown; error: GrexxAuthenticationError }> {
     assertGrexxHttpsUrl(this.opts.tokenUrl, 'tokenUrl');
+    // Guarded: undici fetch + guarded dispatcher. Unguarded (env URLs): global fetch.
+    const doFetch: GrexxFetch = this.opts.ssrfGuard
+      ? (
+          await guardGrexxRequest(this.opts.tokenUrl, 'tokenUrl', 'token', {
+            ...(this.opts.lookup ? { lookup: this.opts.lookup } : {}),
+            ...(this.opts.guardedFetch ? { fetch: this.opts.guardedFetch } : {}),
+          })
+        ).fetch
+      : (url, init) => fetch(url, init);
 
     let response: Response;
     try {
-      response = await fetch(this.opts.tokenUrl, {
+      response = await doFetch(this.opts.tokenUrl, {
         method: 'POST',
         headers: {
           Accept: 'application/json',

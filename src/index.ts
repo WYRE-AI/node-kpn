@@ -19,6 +19,28 @@ export {
   type ResolveGrexxConfigOptions,
 } from './grexx/config.js';
 export {
+  GREXX_ALLOWED_HOSTS,
+  GREXX_API_PATH_PREFIX,
+  GREXX_TOKEN_PATH,
+  GREXX_API_URL_HEADER,
+  GREXX_TOKEN_URL_HEADER,
+  assertGrexxAllowedUrl,
+  assertGrexxHostResolvesPublic,
+  defaultGrexxLookup,
+  guardGrexxRequest,
+  guardedConnectLookup,
+  guardedGrexxFetch,
+  undiciGrexxFetch,
+  isBlockedGrexxAddress,
+  isGrexxAllowedHost,
+  type GrexxFetch,
+  type GrexxLookup,
+  type GrexxRequestGuard,
+  type GrexxLookupAddress,
+  type GrexxUrlGuardOptions,
+  type GrexxUrlKind,
+} from './grexx/url-guard.js';
+export {
   GREXX_EXPIRY_MARGIN_MS,
   GREXX_TOKEN_SCOPE,
   GrexxTokenCache,

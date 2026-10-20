@@ -54,8 +54,8 @@ export class GrexxServerError extends GrexxError {}
 
 /** Missing or rejected local configuration. Not an HTTP error. */
 export class GrexxConfigError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'GrexxConfigError';
     Object.setPrototypeOf(this, new.target.prototype);
   }
