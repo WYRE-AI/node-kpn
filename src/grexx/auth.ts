@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { assertGrexxHttpsUrl } from './config.js';
+import { guardGrexxRequest, type GrexxLookup } from './url-guard.js';
 import { GrexxAuthenticationError, GrexxError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
 
 /** Re-mint this long before `expires_in` (observed 3599s on acceptatie). */
@@ -84,6 +85,10 @@ export interface GrexxTokenProviderOptions {
   timeoutMs?: number;
   /** Clock override for tests. Defaults to `Date.now`. */
   now?: () => number;
+  /** Allowlist + DNS SSRF guard on `tokenUrl` before every mint. */
+  ssrfGuard?: boolean;
+  /** @internal DNS override for the SSRF guard. */
+  lookup?: GrexxLookup;
 }
 
 /**
@@ -164,10 +169,14 @@ export class GrexxTokenProvider {
     params: URLSearchParams,
   ): Promise<{ ok: true; token: GrexxToken } | { ok: false; status: number; body: unknown; error: GrexxAuthenticationError }> {
     assertGrexxHttpsUrl(this.opts.tokenUrl, 'tokenUrl');
+    const guard = this.opts.ssrfGuard
+      ? await guardGrexxRequest(this.opts.tokenUrl, 'tokenUrl', 'token', this.opts.lookup ? { lookup: this.opts.lookup } : {})
+      : {};
 
     let response: Response;
     try {
       response = await fetch(this.opts.tokenUrl, {
+        ...guard,
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -177,7 +186,7 @@ export class GrexxTokenProvider {
         body: params.toString(),
         redirect: 'error',
         signal: AbortSignal.timeout(this.timeoutMs),
-      });
+      } as RequestInit);
     } catch (err) {
       throw tokenTransportError(err);
     }

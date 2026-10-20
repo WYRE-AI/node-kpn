@@ -45,7 +45,20 @@ Redirects are not followed on either call, so a token or Bearer credential is no
 
 `KPN_GREXX_BASE_URL` is the interface root copied from API Gegevens, for example `https://service-accept.grexx.today/interfaces/kpn/kpn_partners_acceptatieomgeving/<interface-id>/`.
 
-Gateway mode may pass the username and password on `X-KPN-Grexx-Username` and `X-KPN-Grexx-Password` (both, or neither). Those override the env credentials. **Base URL and token URL are env-only.** `GrexxClient.fromEnv` / `resolveGrexxConfig` throw `GrexxConfigError` if a request includes `X-KPN-Grexx-Base-Url`, `X-KPN-Grexx-Token-Url`, or the same headers under the older `X-KPN-*` names. Do not copy those header values into `baseUrl` or `tokenUrl`.
+Gateway mode may pass the username and password on `X-KPN-Grexx-Username` and `X-KPN-Grexx-Password` (both, or neither). Those override the env credentials.
+
+### Per-connection URLs (`X-Grexx-Api-Url` / `X-Grexx-Token-Url`)
+
+A gateway can point one connection at another Grexx environment (for example production) with `X-Grexx-Api-Url` (interface root, without `/realtime`) and `X-Grexx-Token-Url`. Rules, enforced by `resolveGrexxConfig` / `GrexxClient.fromEnv`:
+
+- Both or neither. Both absent or empty means `KPN_GREXX_BASE_URL` / `KPN_GREXX_TOKEN_URL`. Exactly one is a `GrexxConfigError`, so a production API is never paired with the acceptatie token host.
+- Honoured only together with `X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`; the env secret is never sent to a header URL.
+- `https:`, no userinfo, no query or fragment, port 443 only.
+- Host exactly one of `GREXX_ALLOWED_HOSTS` (`service.grexx.today`, `service-accept.grexx.today`). No wildcard: other customers' portals live on `*.grexx.today`. Append to the constant to allow another host.
+- Token URL path exactly `/oauth/access_token`; API URL path under `/interfaces/kpn/`.
+- SSRF guard (`ssrfGuard: true`, set automatically for header URLs): before every token mint and `/realtime` post the host is resolved, and the call fails closed if any address is private, loopback, link-local, CGNAT, multicast, reserved/benchmark, ULA, cloud metadata, or an IPv4-in-IPv6 form of those. The same check runs again in the socket `lookup` (undici dispatcher), so DNS rebinding between check and connect cannot reach an internal address. Redirects are refused (`redirect: 'error'`).
+
+Every other URL header name (`X-KPN-Grexx-Base-Url`, `X-KPN-Grexx-Token-Url`, older `X-KPN-*` forms) still throws `GrexxConfigError`.
 
 ## Usage
 

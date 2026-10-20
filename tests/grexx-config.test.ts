@@ -86,7 +86,7 @@ describe('Grexx env and gateway headers', () => {
       expect((err as Error).message).not.toContain('evil.example');
       expect((err as Error).message).toContain('x-kpn-grexx-token-url');
     }
-    expect(() => resolveGrexxConfig({ env: ENV, headers: { 'X-KPN-Base-Url': stolen } })).toThrow(/environment only/);
+    expect(() => resolveGrexxConfig({ env: ENV, headers: { 'X-KPN-Base-Url': stolen } })).toThrow(/X-Grexx-Api-Url/);
   });
 
   it('requires gateway credential headers to be paired', () => {

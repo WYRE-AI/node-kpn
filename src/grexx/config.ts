@@ -1,5 +1,11 @@
 import { GrexxConfigError } from './errors.js';
 import type { GrexxTokenCache } from './auth.js';
+import {
+  GREXX_API_URL_HEADER,
+  GREXX_TOKEN_URL_HEADER,
+  assertGrexxAllowedUrl,
+  type GrexxLookup,
+} from './url-guard.js';
 
 /**
  * Acceptatie OAuth token endpoint (Grexx #4029, confirmed 2026-10-07).
@@ -7,7 +13,11 @@ import type { GrexxTokenCache } from './auth.js';
  */
 export const DEFAULT_GREXX_TOKEN_URL = 'https://service-accept.grexx.today/oauth/access_token';
 
-/** Gateway credential headers. Base URL and token URL are never read from headers. */
+/**
+ * Gateway credential headers. The per-connection URLs travel only as
+ * `X-Grexx-Api-Url` / `X-Grexx-Token-Url` (both or neither, allowlisted and
+ * SSRF-guarded); every other URL header name is rejected.
+ */
 export const GREXX_USERNAME_HEADER = 'x-kpn-grexx-username';
 export const GREXX_PASSWORD_HEADER = 'x-kpn-grexx-password';
 
@@ -35,6 +45,15 @@ export interface GrexxConfig {
    * (`KPN_GREXX_TOKEN_URL`).
    */
   tokenUrl?: string;
+  /**
+   * Apply the Grexx host allowlist and DNS SSRF guard to `baseUrl` and
+   * `tokenUrl` before every request, and pin sockets to public addresses.
+   * Set automatically when the URLs come from `X-Grexx-Api-Url` /
+   * `X-Grexx-Token-Url`. Default false (environment URLs are operator-set).
+   */
+  ssrfGuard?: boolean;
+  /** @internal DNS override for the SSRF guard (tests). */
+  lookup?: GrexxLookup;
   /** Token cache override. Defaults to the process-wide cache. */
   tokenCache?: GrexxTokenCache;
   /**
@@ -61,10 +80,13 @@ export type GrexxEnv = Record<string, string | undefined>;
 export interface ResolveGrexxConfigOptions {
   env?: GrexxEnv;
   /**
-   * Optional gateway credentials (`X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`).
-   * A base-URL or token-URL header is rejected.
+   * Optional gateway credentials (`X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`)
+   * and per-connection URLs (`X-Grexx-Api-Url` / `X-Grexx-Token-Url`, both or
+   * neither, only together with the credential headers). Any other URL header is rejected.
    */
   headers?: GrexxHeaderSource;
+  /** @internal DNS override for the SSRF guard (tests). */
+  lookup?: GrexxLookup;
 }
 
 function requireText(value: string | undefined, label: string): string {
@@ -139,13 +161,19 @@ function envValue(env: GrexxEnv | undefined, name: string): string | undefined {
 /**
  * Resolve Grexx configuration.
  *
- * `KPN_GREXX_BASE_URL` is always taken from the environment (required).
- * `KPN_GREXX_TOKEN_URL` is optional and defaults to the acceptatie token endpoint.
  * Username and password come from `X-KPN-Grexx-Username` / `X-KPN-Grexx-Password`
  * when both headers are set, otherwise from `KPN_GREXX_USERNAME` / `KPN_GREXX_PASSWORD`.
  *
- * Base URL and token URL headers are rejected so a caller cannot redirect the
- * client secret or Bearer token to another host.
+ * URLs: when `X-Grexx-Api-Url` and `X-Grexx-Token-Url` are both set (non-empty),
+ * they are used for this connection and `ssrfGuard` is turned on: https only,
+ * no userinfo, port 443, host exactly on {@link GREXX_ALLOWED_HOSTS}, token path `/oauth/access_token`, API path under `/interfaces/kpn/`, and a DNS
+ * check before every request. Both absent or empty means `KPN_GREXX_BASE_URL`
+ * (required) and `KPN_GREXX_TOKEN_URL` (acceptatie default). Exactly one is a
+ * config error, so a production API is never paired with the acceptatie token
+ * host. The URL headers are honoured only with the credential headers, so the
+ * environment secret is never sent to a caller-chosen host.
+ *
+ * Every other URL header name (`X-KPN-Grexx-Base-Url`, ...) is still rejected.
  */
 export function resolveGrexxConfig(options: ResolveGrexxConfigOptions = {}): GrexxConfig {
   const env: GrexxEnv = options.env ?? process.env;
@@ -155,9 +183,16 @@ export function resolveGrexxConfig(options: ResolveGrexxConfigOptions = {}): Gre
       if (headers.has(name)) {
         throw new GrexxConfigError(
           `Refusing caller-supplied Grexx URL from header "${name}". ` +
-            'Set KPN_GREXX_BASE_URL and KPN_GREXX_TOKEN_URL in the environment only.',
+            'Use X-Grexx-Api-Url and X-Grexx-Token-Url, or set KPN_GREXX_BASE_URL and KPN_GREXX_TOKEN_URL in the environment.',
         );
       }
+    }
+    const apiUrl = headers.get(GREXX_API_URL_HEADER)?.trim() || undefined;
+    const tokenUrl = headers.get(GREXX_TOKEN_URL_HEADER)?.trim() || undefined;
+    if (Boolean(apiUrl) !== Boolean(tokenUrl)) {
+      throw new GrexxConfigError(
+        'X-Grexx-Api-Url and X-Grexx-Token-Url must be provided together (or both omitted for the environment default).',
+      );
     }
     const usernameHeader = headers.get(GREXX_USERNAME_HEADER);
     const passwordHeader = headers.get(GREXX_PASSWORD_HEADER);
@@ -166,12 +201,27 @@ export function resolveGrexxConfig(options: ResolveGrexxConfigOptions = {}): Gre
     if (hasUsername !== hasPassword) {
       throw new GrexxConfigError('X-KPN-Grexx-Username and X-KPN-Grexx-Password must be provided together.');
     }
-    if (hasUsername) {
-      return finishConfig(
-        env,
-        requireText(usernameHeader, 'X-KPN-Grexx-Username'),
-        requireText(passwordHeader, 'X-KPN-Grexx-Password'),
+    if (apiUrl && tokenUrl && !hasUsername) {
+      throw new GrexxConfigError(
+        'X-Grexx-Api-Url and X-Grexx-Token-Url require X-KPN-Grexx-Username and X-KPN-Grexx-Password.',
       );
+    }
+    if (hasUsername) {
+      const username = requireText(usernameHeader, 'X-KPN-Grexx-Username');
+      const password = requireText(passwordHeader, 'X-KPN-Grexx-Password');
+      if (apiUrl && tokenUrl) {
+        assertGrexxAllowedUrl(apiUrl, 'X-Grexx-Api-Url', 'api');
+        assertGrexxAllowedUrl(tokenUrl, 'X-Grexx-Token-Url', 'token');
+        return {
+          username,
+          password,
+          baseUrl: apiUrl,
+          tokenUrl,
+          ssrfGuard: true,
+          ...(options.lookup ? { lookup: options.lookup } : {}),
+        };
+      }
+      return finishConfig(env, username, password);
     }
   }
 
