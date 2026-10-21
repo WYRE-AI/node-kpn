@@ -9,7 +9,7 @@ import {
   GrexxTokenCache,
   GrexxTokenProvider,
 } from '../src/index.js';
-import { TOKEN_BODY, TOKEN_URL, installFetch, jsonResponse } from './grexx-fetch.js';
+import { TOKEN_BODY, TOKEN_URL, failingCancelResponse, installFetch, jsonResponse } from './grexx-fetch.js';
 
 function provider(overrides: Partial<ConstructorParameters<typeof GrexxTokenProvider>[0]> = {}): GrexxTokenProvider {
   return new GrexxTokenProvider({
@@ -257,6 +257,12 @@ describe('Grexx OAuth client_credentials', () => {
     expect(auth.message).not.toContain('test-secret');
     expect(calls).toHaveLength(1);
     expect(cache.size).toBe(0);
+  });
+
+  it('still reports token_endpoint_redirect when the redirect body cannot be cancelled', async () => {
+    installFetch(() => failingCancelResponse(302));
+    const err = await provider().getToken().catch((error: unknown) => error);
+    expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_redirect');
   });
 
   it('fails closed when the token endpoint redirects (thrown transport error fallback)', async () => {

@@ -1,3 +1,5 @@
+import { debuglog } from 'node:util';
+
 /**
  * Typed errors for the Grexx/IRMA client.
  *
@@ -106,12 +108,28 @@ export function isRedirectResponse(response: Pick<Response, 'status' | 'type'>):
   return (response.status >= 300 && response.status <= 399) || response.status === 0 || response.type === 'opaqueredirect';
 }
 
-/** Cancel an unread response body without ever surfacing it. */
-export async function discardBody(response: Response): Promise<void> {
+/** Fixed, sanitized signal for a failed body cleanup; never carries error, status, headers, URL or body. */
+export const GREXX_BODY_DISCARD_FAILED = 'Grexx redirect response body could not be discarded.';
+
+const cleanupLog = debuglog('node-kpn');
+
+function defaultCleanupFailure(message: string): void {
+  cleanupLog(message);
+}
+
+/** Cancel an unread response body without ever surfacing it. Never throws or rejects. */
+export async function discardBody(
+  response: Response,
+  onCleanupFailure: (message: string) => void = defaultCleanupFailure,
+): Promise<void> {
   try {
     await response.body?.cancel();
   } catch {
-    // Best effort.
+    try {
+      onCleanupFailure(GREXX_BODY_DISCARD_FAILED);
+    } catch {
+      // A throwing reporter must never mask the caller's redirect error.
+    }
   }
 }
 

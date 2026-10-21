@@ -15,6 +15,7 @@ import {
   TOKEN_BODY,
   TOKEN_URL,
   ZIP_INPUT,
+  failingCancelResponse,
   installFetch,
   jsonResponse,
   makeGrexx,
@@ -276,6 +277,38 @@ describe('GrexxClient /realtime', () => {
       .catch((error: unknown) => error);
     expect(err).toBeInstanceOf(GrexxServerError);
     expect((err as GrexxServerError).code).toBe('realtime_redirect');
+  });
+
+  it('does not retry a thrown realtime redirect, even when idempotent with retries left', async () => {
+    const calls = installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      throw new TypeError('fetch failed', { cause: new Error('unexpected redirect') });
+    });
+    const err = await makeGrexx({ maxRetries: 3 })
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>', { idempotent: true })
+      .catch((error: unknown) => error);
+    expect((err as GrexxError).code).toBe('realtime_redirect');
+    expect(realtimeCalls(calls)).toHaveLength(1);
+  });
+
+  it('still retries a plain network error on an idempotent call', async () => {
+    let hits = 0;
+    const calls = installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      hits += 1;
+      if (hits === 1) throw new TypeError('fetch failed', { cause: new Error('ECONNRESET') });
+      return xmlResponse(SUCCESS_XML);
+    });
+    await expect(makeGrexx({ maxRetries: 1 }).zipCodeCheck(ZIP_INPUT)).resolves.toMatchObject({ code: 'Success' });
+    expect(realtimeCalls(calls)).toHaveLength(2);
+  });
+
+  it('surfaces realtime_redirect when the redirect body cannot be cancelled', async () => {
+    installFetch((call) => (call.url === TOKEN_URL ? jsonResponse(TOKEN_BODY) : failingCancelResponse(302)));
+    const err = await makeGrexx()
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect((err as GrexxError).code).toBe('realtime_redirect');
   });
 
   it('shares one rate limiter for the same account and not across usernames', () => {

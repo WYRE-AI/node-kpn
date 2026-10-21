@@ -91,6 +91,16 @@ export function xmlResponse(xml: string, status = 200, headers: Record<string, s
   });
 }
 
+/** A redirect response whose body.cancel() rejects with a secret-like error. */
+export function failingCancelResponse(status = 302): Response {
+  const body = new ReadableStream({
+    cancel() {
+      throw new Error('cancel failed: secret-token-123');
+    },
+  });
+  return new Response(body, { status, headers: { location: 'https://evil.example/x' } });
+}
+
 export function makeGrexx(overrides: Partial<GrexxConfig> = {}): GrexxClient {
   return new GrexxClient({
     username: 'test-user',

@@ -182,6 +182,7 @@ export class GrexxClient {
         });
       } catch (err) {
         const wrapped = realtimeTransportError(err);
+        if (wrapped.code === 'realtime_redirect') throw wrapped;
         if (attempt >= maxRetries) throw wrapped;
         attempt += 1;
         await sleep(backoff(attempt));
