@@ -44,7 +44,34 @@ describe('assertGrexxAllowedUrl', () => {
     expect(assertGrexxAllowedUrl(`${PROD_API}/`, 'api', 'api').pathname).toBe('/interfaces/kpn/kpn_partners/abc123/');
     expect(assertGrexxAllowedUrl(PROD_TOKEN, 'token', 'token').pathname).toBe('/oauth/access_token');
     expect(assertGrexxAllowedUrl(ACC_TOKEN, 'token', 'token').hostname).toBe('service-accept.grexx.today');
-    expect(assertGrexxAllowedUrl('https://SERVICE.grexx.today.:443/oauth/access_token', 't', 'token').port).toBe('');
+    expect(assertGrexxAllowedUrl('https://SERVICE.grexx.today:443/oauth/access_token', 't', 'token').port).toBe('');
+  });
+
+  it('rejects a trailing-dot host and never echoes the supplied URL', () => {
+    for (const url of [
+      'https://service.grexx.today./oauth/access_token',
+      'https://SERVICE.grexx.today.:443/oauth/access_token?secret=hunter2',
+      'http://x.service.grexx.today.evil.example:8443/oauth/access_token#frag',
+    ]) {
+      const err = (() => {
+        try {
+          assertGrexxAllowedUrl(url, 'X-Grexx-Token-Url', 'token');
+        } catch (e) {
+          return e as Error;
+        }
+        return undefined;
+      })();
+      expect(err).toBeInstanceOf(GrexxConfigError);
+      expect(err!.message).not.toContain('hunter2');
+      expect(err!.message).not.toContain('evil.example');
+      expect(err!.message).not.toContain(url);
+    }
+    expect(() => assertGrexxAllowedUrl('https://service.grexx.today./oauth/access_token', 'u', 'token')).toThrow(
+      /allowed Grexx host/,
+    );
+    expect(() => assertGrexxAllowedUrl('https://x.service.grexx.today/oauth/access_token', 'u', 'token')).toThrow(
+      /allowed Grexx host/,
+    );
   });
 
   it.each([
@@ -242,7 +269,7 @@ describe('GrexxClient with per-connection URLs', () => {
     const calls = installFetch((call) => (call.url === PROD_TOKEN ? jsonResponse(TOKEN_BODY) : xmlResponse(SUCCESS_XML)));
     await client(publicLookup).zipCodeCheck(ZIP);
     expect(calls.map((c) => c.url)).toEqual([PROD_TOKEN, `${PROD_API}/realtime`]);
-    expect(calls.every((c) => c.redirect === 'error')).toBe(true);
+    expect(calls.every((c) => c.redirect === 'manual')).toBe(true);
     // Both requests went through guard.fetch with the guarded undici dispatcher.
     expect(dispatchers).toHaveLength(2);
     expect(dispatchers.every((d) => d !== undefined && d === dispatchers[0])).toBe(true);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GrexxAuthenticationError,
+  GrexxError,
   GrexxForbiddenError,
   GrexxServerError,
   GrexxValidationError,
@@ -14,6 +15,7 @@ import {
   TOKEN_BODY,
   TOKEN_URL,
   ZIP_INPUT,
+  failingCancelResponse,
   installFetch,
   jsonResponse,
   makeGrexx,
@@ -54,7 +56,7 @@ describe('GrexxClient /realtime', () => {
     expect(realtime.body).toContain('<IsRoomNumberKnown>false</IsRoomNumberKnown>');
     expect(realtime.body).not.toContain('test-secret');
     expect(realtime.body).not.toContain('Envelope');
-    expect(realtime.redirect).toBe('error');
+    expect(realtime.redirect).toBe('manual');
     expect(result.code).toBe('Success');
     expect(result.requestId).toBe('rt-req');
     expect(result.suppliers.map((supplier) => supplier.name)).toEqual(['KPN', 'KPNWEAS', 'Tele2Fiber']);
@@ -232,6 +234,39 @@ describe('GrexxClient /realtime', () => {
     expect(realtime).toBe(1);
   });
 
+  it('never calls /realtime when the token endpoint redirects', async () => {
+    const calls = installFetch(
+      () => new Response('', { status: 302, headers: { location: 'https://evil.example/oauth/access_token' } }),
+    );
+    const err = await makeGrexx()
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_redirect');
+    expect(realtimeCalls(calls)).toHaveLength(0);
+  });
+
+  it('refuses a realtime 302 once, even when idempotent, with no re-mint or leak', async () => {
+    const location = 'https://evil.example/realtime';
+    const calls = installFetch((call) =>
+      call.url === TOKEN_URL
+        ? jsonResponse(TOKEN_BODY)
+        : new Response('<x>body</x>', { status: 302, headers: { location } }),
+    );
+    const err = await makeGrexx({ maxRetries: 3 })
+      .zipCodeCheck(ZIP_INPUT)
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxError);
+    const e = err as GrexxError;
+    expect(e.code).toBe('realtime_redirect');
+    expect(e.message).toBe('Grexx realtime endpoint redirected (HTTP 302). Refusing to follow the redirect.');
+    for (const secret of [location, 'evil.example', TOKEN_BODY.access_token, 'Bearer', 'body']) {
+      expect(e.message).not.toContain(secret);
+    }
+    expect(realtimeCalls(calls)).toHaveLength(1);
+    expect(tokenCalls(calls)).toHaveLength(1);
+  });
+
   it('classifies a realtime redirect reported on error.cause', async () => {
     installFetch((call) => {
       if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
@@ -242,6 +277,38 @@ describe('GrexxClient /realtime', () => {
       .catch((error: unknown) => error);
     expect(err).toBeInstanceOf(GrexxServerError);
     expect((err as GrexxServerError).code).toBe('realtime_redirect');
+  });
+
+  it('does not retry a thrown realtime redirect, even when idempotent with retries left', async () => {
+    const calls = installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      throw new TypeError('fetch failed', { cause: new Error('unexpected redirect') });
+    });
+    const err = await makeGrexx({ maxRetries: 3 })
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>', { idempotent: true })
+      .catch((error: unknown) => error);
+    expect((err as GrexxError).code).toBe('realtime_redirect');
+    expect(realtimeCalls(calls)).toHaveLength(1);
+  });
+
+  it('still retries a plain network error on an idempotent call', async () => {
+    let hits = 0;
+    const calls = installFetch((call) => {
+      if (call.url === TOKEN_URL) return jsonResponse(TOKEN_BODY);
+      hits += 1;
+      if (hits === 1) throw new TypeError('fetch failed', { cause: new Error('ECONNRESET') });
+      return xmlResponse(SUCCESS_XML);
+    });
+    await expect(makeGrexx({ maxRetries: 1 }).zipCodeCheck(ZIP_INPUT)).resolves.toMatchObject({ code: 'Success' });
+    expect(realtimeCalls(calls)).toHaveLength(2);
+  });
+
+  it('surfaces realtime_redirect when the redirect body cannot be cancelled', async () => {
+    installFetch((call) => (call.url === TOKEN_URL ? jsonResponse(TOKEN_BODY) : failingCancelResponse(302)));
+    const err = await makeGrexx()
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect((err as GrexxError).code).toBe('realtime_redirect');
   });
 
   it('shares one rate limiter for the same account and not across usernames', () => {

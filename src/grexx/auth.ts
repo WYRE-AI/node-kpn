@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { assertGrexxHttpsUrl } from './config.js';
 import { guardGrexxRequest, type GrexxFetch, type GrexxLookup } from './url-guard.js';
-import { GrexxAuthenticationError, GrexxError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
+import { GrexxAuthenticationError, GrexxError, GrexxServerError, discardBody, isRedirectError, isRedirectResponse, parseGrexxError } from './errors.js';
 
 /** Re-mint this long before `expires_in` (observed 3599s on acceptatie). */
 export const GREXX_EXPIRY_MARGIN_MS = 60_000;
@@ -191,11 +191,22 @@ export class GrexxTokenProvider {
           ...(authorization ? { Authorization: authorization } : {}),
         },
         body: params.toString(),
-        redirect: 'error',
+        redirect: 'manual',
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (err) {
       throw tokenTransportError(err);
+    }
+
+    // Before the body is read: neither the Location header, URL, nor body may reach the error.
+    if (isRedirectResponse(response)) {
+      await discardBody(response);
+      throw new GrexxAuthenticationError(
+        `Grexx token endpoint redirected (HTTP ${response.status}). Refusing to follow redirects or call /realtime without a token.`,
+        response.status,
+        undefined,
+        'token_endpoint_redirect',
+      );
     }
 
     const rawText = await response.text();

@@ -8,8 +8,9 @@ import { GrexxConfigError } from './errors.js';
 /**
  * Exact Grexx API hostnames a per-connection API or token URL may point at.
  * No wildcard: other Grexx customers' portals live on `*.grexx.today`.
- * `service-accept.grexx.today` is acceptatie (confirmed); `service.grexx.today`
- * is production (inferred, not yet confirmed from a production portal).
+ * `service-accept.grexx.today` is acceptatie; `service.grexx.today` is
+ * production (confirmed: base `https://service.grexx.today/interfaces/kpn/kpn_partners/<id>`,
+ * token `https://service.grexx.today/oauth/access_token`).
  * Add a host here to allow it.
  */
 export const GREXX_ALLOWED_HOSTS: readonly string[] = Object.freeze([
@@ -34,17 +35,14 @@ export type GrexxLookup = (hostname: string) => Promise<GrexxLookupAddress[]>;
 export const defaultGrexxLookup: GrexxLookup = (hostname) =>
   dns.promises.lookup(hostname, { all: true, verbatim: true });
 
-function normalizeHost(hostname: string): string {
-  let host = hostname.toLowerCase();
-  if (host.endsWith('.')) host = host.slice(0, -1);
-  return host;
-}
-
-/** True when `hostname` exactly equals one of {@link GREXX_ALLOWED_HOSTS} (case-insensitive). */
+/**
+ * True when `hostname` exactly equals one of {@link GREXX_ALLOWED_HOSTS}
+ * (lowercased only). A trailing dot (`service.grexx.today.`) does not match.
+ */
 export function isGrexxAllowedHost(hostname: string, hosts: readonly string[] = GREXX_ALLOWED_HOSTS): boolean {
-  const host = normalizeHost(hostname);
+  const host = hostname.toLowerCase();
   if (host === '') return false;
-  return hosts.some((entry) => normalizeHost(entry) === host);
+  return hosts.some((entry) => entry.toLowerCase() === host);
 }
 
 /** Which per-connection URL is being checked: the interface root or the OAuth token endpoint. */

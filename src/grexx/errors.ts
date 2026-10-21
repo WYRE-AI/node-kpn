@@ -1,3 +1,5 @@
+import { debuglog } from 'node:util';
+
 /**
  * Typed errors for the Grexx/IRMA client.
  *
@@ -99,8 +101,43 @@ function describeBody(body: unknown): { message?: string; code?: string } {
 }
 
 /**
- * Node's `fetch` with `redirect: 'error'` throws `TypeError: fetch failed`
- * and puts the redirect text on `error.cause` (`unexpected redirect`).
+ * True for a response that is a redirect under `redirect: 'manual'`: any 3xx,
+ * or status 0 / type `opaqueredirect` (browser-style fetch implementations).
+ */
+export function isRedirectResponse(response: Pick<Response, 'status' | 'type'>): boolean {
+  return (response.status >= 300 && response.status <= 399) || response.status === 0 || response.type === 'opaqueredirect';
+}
+
+/** Fixed, sanitized signal for a failed body cleanup; never carries error, status, headers, URL or body. */
+export const GREXX_BODY_DISCARD_FAILED = 'Grexx redirect response body could not be discarded.';
+
+const cleanupLog = debuglog('node-kpn');
+
+function defaultCleanupFailure(message: string): void {
+  cleanupLog(message);
+}
+
+/** Cancel an unread response body without ever surfacing it. Never throws or rejects. */
+export async function discardBody(
+  response: Response,
+  onCleanupFailure: (message: string) => void = defaultCleanupFailure,
+): Promise<void> {
+  try {
+    await response.body?.cancel();
+  } catch {
+    try {
+      onCleanupFailure(GREXX_BODY_DISCARD_FAILED);
+    } catch {
+      // A throwing reporter must never mask the caller's redirect error.
+    }
+  }
+}
+
+/**
+ * Fallback only: requests use `redirect: 'manual'`, so a redirect normally
+ * arrives as a 3xx response, not an exception. A fetch implementation that
+ * still throws on redirect (`TypeError: fetch failed` with `unexpected redirect`
+ * on `error.cause`) is mapped to the same redirect errors.
  */
 export function isRedirectError(err: unknown): boolean {
   return /redirect/i.test(errorMessages(err));
