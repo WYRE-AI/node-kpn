@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GrexxAuthenticationError,
+  GrexxError,
   GrexxForbiddenError,
   GrexxServerError,
   GrexxValidationError,
@@ -54,7 +55,7 @@ describe('GrexxClient /realtime', () => {
     expect(realtime.body).toContain('<IsRoomNumberKnown>false</IsRoomNumberKnown>');
     expect(realtime.body).not.toContain('test-secret');
     expect(realtime.body).not.toContain('Envelope');
-    expect(realtime.redirect).toBe('error');
+    expect(realtime.redirect).toBe('manual');
     expect(result.code).toBe('Success');
     expect(result.requestId).toBe('rt-req');
     expect(result.suppliers.map((supplier) => supplier.name)).toEqual(['KPN', 'KPNWEAS', 'Tele2Fiber']);
@@ -230,6 +231,39 @@ describe('GrexxClient /realtime', () => {
     expect((err as GrexxServerError).statusCode).toBe(503);
     expect((err as GrexxServerError).code).not.toBe('invalid_xml');
     expect(realtime).toBe(1);
+  });
+
+  it('never calls /realtime when the token endpoint redirects', async () => {
+    const calls = installFetch(
+      () => new Response('', { status: 302, headers: { location: 'https://evil.example/oauth/access_token' } }),
+    );
+    const err = await makeGrexx()
+      .postRealtime('ZipCodeCheckRequest_V6', '<Portfolio>All</Portfolio>')
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    expect((err as GrexxAuthenticationError).code).toBe('token_endpoint_redirect');
+    expect(realtimeCalls(calls)).toHaveLength(0);
+  });
+
+  it('refuses a realtime 302 once, even when idempotent, with no re-mint or leak', async () => {
+    const location = 'https://evil.example/realtime';
+    const calls = installFetch((call) =>
+      call.url === TOKEN_URL
+        ? jsonResponse(TOKEN_BODY)
+        : new Response('<x>body</x>', { status: 302, headers: { location } }),
+    );
+    const err = await makeGrexx({ maxRetries: 3 })
+      .zipCodeCheck(ZIP_INPUT)
+      .catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxError);
+    const e = err as GrexxError;
+    expect(e.code).toBe('realtime_redirect');
+    expect(e.message).toBe('Grexx realtime endpoint redirected (HTTP 302). Refusing to follow the redirect.');
+    for (const secret of [location, 'evil.example', TOKEN_BODY.access_token, 'Bearer', 'body']) {
+      expect(e.message).not.toContain(secret);
+    }
+    expect(realtimeCalls(calls)).toHaveLength(1);
+    expect(tokenCalls(calls)).toHaveLength(1);
   });
 
   it('classifies a realtime redirect reported on error.cause', async () => {

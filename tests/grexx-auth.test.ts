@@ -43,7 +43,7 @@ describe('Grexx OAuth client_credentials', () => {
     expect(call.method).toBe('POST');
     expect(call.url).toBe(TOKEN_URL);
     expect(call.headers.get('content-type')).toBe('application/x-www-form-urlencoded');
-    expect(call.redirect).toBe('error');
+    expect(call.redirect).toBe('manual');
     const basic = decodedBasic(call.headers.get('authorization'));
     expect(basic.clientId).toBe("id !*'():");
     expect(basic.clientSecret).toBe('sec&ret=1 +');
@@ -238,7 +238,28 @@ describe('Grexx OAuth client_credentials', () => {
     expect(cache.size).toBe(0);
   });
 
-  it('fails closed when the token endpoint redirects', async () => {
+  it.each([301, 302, 307, 308])('fails closed on a token endpoint HTTP %i redirect', async (status) => {
+    const location = 'https://evil.example/steal?x=1';
+    const calls = installFetch(
+      () => new Response('redirecting test-secret', { status, headers: { location } }),
+    );
+    const cache = new GrexxTokenCache();
+    const err = await provider({ cache }).getToken().catch((error: unknown) => error);
+    expect(err).toBeInstanceOf(GrexxAuthenticationError);
+    const auth = err as GrexxAuthenticationError;
+    expect(auth.code).toBe('token_endpoint_redirect');
+    expect(auth.statusCode).toBe(status);
+    expect(auth.message).toBe(
+      `Grexx token endpoint redirected (HTTP ${status}). Refusing to follow redirects or call /realtime without a token.`,
+    );
+    expect(auth.message).not.toContain(location);
+    expect(auth.message).not.toContain('evil.example');
+    expect(auth.message).not.toContain('test-secret');
+    expect(calls).toHaveLength(1);
+    expect(cache.size).toBe(0);
+  });
+
+  it('fails closed when the token endpoint redirects (thrown transport error fallback)', async () => {
     installFetch(() => {
       // Node fetch (`redirect: 'error'`) shape: message is "fetch failed",
       // and the redirect text is on `cause`.

@@ -274,7 +274,7 @@ describe('GrexxClient.prequalification', () => {
     expect(realtime.headers.get('content-type')).toContain('text/xml');
     expect(realtime.body).toBe(buildPrequalificationRequest(PREP));
     expect(realtime.body).not.toContain('Envelope');
-    expect(realtime.redirect).toBe('error');
+    expect(realtime.redirect).toBe('manual');
     expect(result.nlsType).toBe(2);
     expect(result.products[0]).toMatchObject({ availability: 'Green', isVectoring: true });
     expect(result.requestId).toBe('pq-1');

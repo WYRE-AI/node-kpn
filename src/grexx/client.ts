@@ -9,7 +9,7 @@ import {
   type GrexxConfig,
   type ResolveGrexxConfigOptions,
 } from './config.js';
-import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, isRedirectError, parseGrexxError } from './errors.js';
+import { GrexxConfigError, GrexxError, GrexxRateLimitError, GrexxServerError, discardBody, isRedirectError, isRedirectResponse, parseGrexxError } from './errors.js';
 import { SlidingWindowRateLimiter } from './rate-limit.js';
 import { assertGrexxAllowedUrl, guardGrexxRequest, type GrexxFetch, type GrexxLookup } from './url-guard.js';
 import { readGrexxStatus, isGrexxSuccessCode } from './status.js';
@@ -177,7 +177,7 @@ export class GrexxClient {
             Authorization: authorization,
           },
           body: xml,
-          redirect: 'error',
+          redirect: 'manual',
           signal: AbortSignal.timeout(this.requestTimeoutMs),
         });
       } catch (err) {
@@ -186,6 +186,17 @@ export class GrexxClient {
         attempt += 1;
         await sleep(backoff(attempt));
         continue;
+      }
+
+      // Before the body is read and before 401 handling: not retryable, no re-mint.
+      if (isRedirectResponse(response)) {
+        await discardBody(response);
+        throw new GrexxError(
+          `Grexx realtime endpoint redirected (HTTP ${response.status}). Refusing to follow the redirect.`,
+          response.status,
+          undefined,
+          'realtime_redirect',
+        );
       }
 
       const raw = await response.text();
